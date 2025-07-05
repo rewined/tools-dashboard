@@ -1,0 +1,7 @@
+reportlab==4.0.7
+pandas==2.1.4
+click==8.1.7
+flask==3.0.0
+werkzeug==3.0.1
+gunicorn==21.2.0
+python-barcode==0.15.1
