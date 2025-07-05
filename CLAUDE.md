@@ -36,9 +36,33 @@ This document tracks the Tools Dashboard project - a Flask-based web application
 ### GitHub Repository Details
 - **Repository**: `rewined/tools-dashboard`
 - **Primary Branch**: `main`
-- **Latest Commit**: `dfe02952` (Updated style.css with correct button styling)
+- **Latest Commit**: Auto-updates with GitHub MCP changes
 - **Deployment Method**: Railway connected to GitHub for auto-deployment
 - **Local Repository**: `/mnt/c/Users/adamf/OneDrive/Desktop/Documents/ClaudeCode/price-sticker-printer/` (CORRECT - Original project directory)
+
+## IMPORTANT REMINDERS FOR FUTURE CLAUDE SESSIONS
+
+### 🚨 CRITICAL WORKFLOW RULES 🚨
+
+#### GitHub File Management Protocol
+**ALWAYS USE GITHUB MCP TOOLS** - Never ask user to run git commands manually
+- Use `mcp__github__create_or_update_file` to update files in GitHub
+- Use `mcp__github__get_file_contents` to read GitHub files  
+- Use `mcp__github__push_files` for multiple file updates
+- GitHub auto-syncs with Railway for deployment
+
+#### Working Directory Protocol
+**ORIGINAL PROJECT DIRECTORY** = `/mnt/c/Users/adamf/OneDrive/Desktop/Documents/ClaudeCode/price-sticker-printer/`
+- This is the user's actual project with all source files
+- Do NOT create copies in `/home/adamfetsch/` directories
+- All file operations should reference the original directory
+- Use GitHub MCP to sync changes between local and GitHub
+
+#### Repository Synchronization Status
+- **GitHub repo**: Contains working deployment files
+- **Local directory**: Contains user's original source files
+- **Workflow**: Read local files → Update GitHub via MCP → Railway auto-deploys
+- **Method**: Use GitHub MCP tools exclusively for GitHub updates
 
 ## Project Structure and Key Files
 
@@ -79,27 +103,17 @@ src/
 
 ## Development Workflow
 
-### Local Development Setup
-1. **Navigate to Project**: `cd "/mnt/c/Users/adamf/OneDrive/Desktop/Documents/ClaudeCode/price-sticker-printer/"`
-2. **Virtual Environment**: `python3 -m venv venv`
-3. **Activation**: `source venv/bin/activate` 
-4. **Dependencies**: `pip install -r requirements.txt`
-5. **Local Server**: `python app_toolkit.py` (runs on http://localhost:5000)
+### File Update Process
+1. **Read Local File**: Use `Read` tool to get local file content
+2. **Update GitHub**: Use `mcp__github__create_or_update_file` to push changes
+3. **Auto-Deploy**: Railway automatically deploys from GitHub
+4. **Verify**: Check deployed application
 
-### Version Control Workflow
-1. **Local Testing**: Test changes on localhost:5000
-2. **Git Commands**:
-   ```bash
-   git add .
-   git commit -m "Description of changes"
-   git push
-   ```
-3. **Auto-Deployment**: Railway automatically deploys from GitHub pushes
-4. **Live URL**: Generated Railway domain serves the application
-
-### Key Git Commits History
-- `ee1cc1b`: Added exact local template and CSS files
-- `dfe02952`: Updated style.css with correct button styling
+### Testing Workflow
+1. **Local Testing**: User tests changes locally if desired
+2. **GitHub MCP Update**: Claude updates GitHub with verified changes
+3. **Live Deployment**: Railway auto-deploys updated files
+4. **Verification**: Check live application matches expectations
 
 ## Application Features
 
@@ -139,36 +153,29 @@ src/
 
 ## Current Issues and Solutions
 
-### Repository Synchronization
-- **Issue**: GitHub repository was created from copied files instead of original project
-- **Root Cause**: Development started in wrong directory (/home/adamfetsch/tools-project/)
-- **Solution**: Reconnecting GitHub to original project directory
-- **Status**: 🔄 In progress - updating GitHub with original files
-
 ### Styling Discrepancies
 - **Issue**: Deployed version doesn't exactly match local screenshot
-- **Root Cause**: CSS differences between local and GitHub versions
-- **Solution**: Updated GitHub with exact local style.css file
-- **Status**: 🔄 Partially resolved, minor differences remain
+- **Root Cause**: Minor differences in CSS interpretation or missing styles
+- **Solution**: Use GitHub MCP to update GitHub with exact local files
+- **Status**: 🔄 Ready for further refinement using GitHub MCP workflow
 
-### Railway API Connectivity
-- **Issue**: Intermittent Railway MCP API responses
-- **Workaround**: Manual deployment via Railway dashboard when MCP fails
-- **Monitoring**: Check Railway API status when automation fails
+### Repository Synchronization
+- **Issue**: GitHub repository created separately from original project
+- **Solution**: Use GitHub MCP tools to sync files (never manual git commands)
+- **Status**: ✅ Workflow established using GitHub MCP tools
 
 ## Troubleshooting Guide
 
 ### Common Issues
-1. **Local server won't start**: Ensure virtual environment is activated in correct directory
-2. **Missing dependencies**: Run `pip install -r requirements.txt`
+1. **Local server won't start**: Help user with virtual environment in original directory
+2. **Styling issues**: Read local CSS → Update GitHub via MCP → Verify deployment
 3. **Railway deployment fails**: Check GitHub repo connection in Railway dashboard
-4. **Styling issues**: Verify style.css is properly imported by toolkit.css
+4. **File sync issues**: Use GitHub MCP tools to update repository
 
 ### Emergency Procedures
-1. **Rollback Deployment**: Revert to previous commit via git reset
+1. **Rollback Deployment**: Use GitHub MCP to revert files to previous versions
 2. **Railway Issues**: Use Railway dashboard manual deployment
 3. **GitHub Access**: Verify GitHub MCP token is still valid
-4. **Local Development**: Always test locally before pushing to GitHub
 
 ## Key File Locations
 - **Project Root**: `/mnt/c/Users/adamf/OneDrive/Desktop/Documents/ClaudeCode/price-sticker-printer/`
@@ -178,5 +185,5 @@ src/
 
 ---
 
-*Last Updated: 2025-07-05 - Corrected repository synchronization*
-*Next Update: After completing GitHub reconnection*
+*Last Updated: 2025-07-05 - Added critical workflow reminders and GitHub MCP protocol*
+*Next Update: After implementing GitHub MCP-based file synchronization*
