@@ -1,0 +1,77 @@
+{% extends "toolkit_base.html" %}
+
+{% block title %}{{ tool_name }} - Coming Soon{% endblock %}
+{% block nav_title %}{{ tool_name }}{% endblock %}
+
+{% block content %}
+<div class="coming-soon-container">
+    <div class="coming-soon-content">
+        <div class="coming-soon-icon">🚧</div>
+        <h1>{{ tool_name }}</h1>
+        <h2>Coming Soon</h2>
+        <p>We're working hard to bring you this exciting new tool. Stay tuned for updates!</p>
+        <a href="/" class="btn btn-primary">← Back to Dashboard</a>
+    </div>
+</div>
+
+<style>
+.coming-soon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    text-align: center;
+}
+
+.coming-soon-content {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 3rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+}
+
+.coming-soon-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.coming-soon-content h1 {
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+}
+
+.coming-soon-content h2 {
+    color: #666;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+.coming-soon-content p {
+    color: #666;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+</style>
+{% endblock %}
