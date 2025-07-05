@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="upload-section">
+    <h2>Upload Your Product Data</h2>
+    <p class="subtitle">Upload a CSV file containing product information to generate price stickers</p>
+    
+    <div class="upload-container">
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="upload-area" id="uploadArea">
+                <svg class="upload-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <p class="upload-text">Drag and drop your CSV file here, or click to browse</p>
+                <p class="upload-hint">Maximum file size: 16MB</p>
+                <input type="file" id="fileInput" accept=".csv" hidden>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="configSection" class="config-section" style="display: none;">
+    <h3>Configure Label Generation</h3>
+    
+    <div class="preview-section">
+        <h4>CSV Preview</h4>
+        <div class="stats">
+            <span id="rowCount"></span> rows found
+        </div>
+        <div class="table-container">
+            <table id="previewTable" class="preview-table"></table>
+        </div>
+    </div>
+    
+    <form id="generateForm" class="config-form">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="formatSelect">Label Format</label>
+                <select id="formatSelect" name="format" class="form-control">
+                    {% for key, format in formats.items() %}
+                    <option value="{{ key }}">{{ format.name }} ({{ format.columns }}x{{ format.rows }} per page)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="productField">Product Name Column</label>
+                <select id="productField" name="product_field" class="form-control"></select>
+            </div>
+            
+            <div class="form-group">
+                <label for="priceField">Price Column</label>
+                <select id="priceField" name="price_field" class="form-control"></select>
+            </div>
+            
+            <div class="form-group">
+                <label for="skuField">SKU Column (Optional)</label>
+                <select id="skuField" name="sku_field" class="form-control">
+                    <option value="">-- None --</option>
+                </select>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" id="generateBtn">
+            Generate Labels
+        </button>
+    </form>
+</div>
+
+<div id="resultSection" class="result-section" style="display: none;">
+    <div class="success-message">
+        <svg class="success-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <h3>Labels Generated Successfully!</h3>
+        <p id="resultMessage"></p>
+        <div class="button-group">
+            <a id="downloadBtn" href="#" class="btn btn-primary" download>Download PDF</a>
+            <button onclick="resetForm()" class="btn btn-secondary">Generate More Labels</button>
+        </div>
+    </div>
+</div>
+
+<div class="info-section">
+    <h3>How to Format Your CSV</h3>
+    <p>Your CSV file should include columns for:</p>
+    <ul>
+        <li><strong>Product Name</strong> - The name of the product</li>
+        <li><strong>Price</strong> - The price (can include or exclude currency symbol)</li>
+        <li><strong>SKU</strong> (Optional) - Product code or SKU</li>
+    </ul>
+    <p>Example CSV format:</p>
+    <pre>product,price,sku
+"Organic Apples",3.99,APL001
+"Whole Milk",4.29,MLK002</pre>
+</div>
+{% endblock %}
