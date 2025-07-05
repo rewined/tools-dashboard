@@ -1,0 +1,35 @@
+{% extends "toolkit_base.html" %}
+
+{% block title %}Team Toolkit - Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Team Toolkit</h1>
+    <p class="subtitle">Business productivity tools for your team</p>
+</div>
+
+<div class="tools-grid">
+    {% for tool in tools %}
+    <div class="tool-card {% if tool.status != 'active' %}tool-disabled{% endif %}">
+        {% if tool.status == 'active' %}
+        <a href="{{ tool.url }}" class="tool-link">
+        {% endif %}
+            <div class="tool-icon">{{ tool.icon }}</div>
+            <h3 class="tool-name">{{ tool.name }}</h3>
+            <p class="tool-description">{{ tool.description }}</p>
+            {% if tool.status == 'coming-soon' %}
+            <span class="tool-status">Coming Soon</span>
+            {% elif tool.status == 'active' %}
+            <span class="tool-status active">Available</span>
+            {% endif %}
+        {% if tool.status == 'active' %}
+        </a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<div class="dashboard-footer">
+    <p>More tools will be added regularly. <a href="mailto:admin@company.com">Request a tool</a></p>
+</div>
+{% endblock %}

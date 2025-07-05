@@ -1,0 +1,214 @@
+{% extends "toolkit_base.html" %}
+
+{% block title %}Label Printer - Team Toolkit{% endblock %}
+{% block nav_title %}Label Printer{% endblock %}
+
+{% block content %}
+<div class="tool-header">
+    <h1>🏷️ Label Printer</h1>
+    <p>Generate barcode price stickers from your product data</p>
+</div>
+
+<div class="label-generator">
+    <div class="upload-section">
+        <h3>1. Upload Product Data</h3>
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-content">
+                <div class="upload-icon">📄</div>
+                <p>Drop your CSV file here or <span class="browse-link">browse</span></p>
+                <small>Supports CSV files with SKU, Price, and Quantity columns</small>
+            </div>
+            <input type="file" id="fileInput" accept=".csv" style="display: none;">
+        </div>
+        <div id="fileInfo" class="file-info" style="display: none;"></div>
+    </div>
+
+    <div class="options-section" id="optionsSection" style="display: none;">
+        <h3>2. Configure Labels</h3>
+        <div class="options-grid">
+            <div class="option-group">
+                <label for="labelFormat">Label Format:</label>
+                <select id="labelFormat">
+                    {% for key, format in formats.items() %}
+                    <option value="{{ key }}">{{ format.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-section" id="previewSection" style="display: none;">
+        <h3>3. Preview & Generate</h3>
+        <div id="dataPreview"></div>
+        <button id="generateBtn" class="btn btn-primary" disabled>Generate Labels</button>
+    </div>
+
+    <div class="result-section" id="resultSection" style="display: none;">
+        <h3>4. Download</h3>
+        <div id="resultContent"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Label printer functionality
+class LabelPrinter {
+    constructor() {
+        this.uploadedData = null;
+        this.initializeEventListeners();
+    }
+
+    initializeEventListeners() {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const generateBtn = document.getElementById('generateBtn');
+
+        // File upload handling
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', this.handleDragOver.bind(this));
+        uploadArea.addEventListener('drop', this.handleDrop.bind(this));
+        fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+        
+        // Generate button
+        generateBtn.addEventListener('click', this.generateLabels.bind(this));
+    }
+
+    handleDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+    }
+
+    handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            this.processFile(files[0]);
+        }
+    }
+
+    handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file) {
+            this.processFile(file);
+        }
+    }
+
+    async processFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/labels/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                this.uploadedData = result.data;
+                this.showFileInfo(file.name, result.row_count);
+                this.showPreview(result.data);
+            } else {
+                this.showError(result.error);
+            }
+        } catch (error) {
+            this.showError('Failed to upload file');
+        }
+    }
+
+    showFileInfo(filename, rowCount) {
+        const fileInfo = document.getElementById('fileInfo');
+        fileInfo.innerHTML = `
+            <div class="success-message">
+                <strong>✓ File uploaded:</strong> ${filename} (${rowCount} items)
+            </div>
+        `;
+        fileInfo.style.display = 'block';
+        document.getElementById('optionsSection').style.display = 'block';
+    }
+
+    showPreview(data) {
+        const preview = document.getElementById('dataPreview');
+        const previewHtml = `
+            <div class="data-preview">
+                <h4>Data Preview (${data.length} items):</h4>
+                <div class="preview-table">
+                    <div class="preview-row header">
+                        <div>SKU</div>
+                        <div>Price</div>
+                        <div>Quantity</div>
+                    </div>
+                    ${data.slice(0, 5).map(item => `
+                        <div class="preview-row">
+                            <div>${item.sku || 'N/A'}</div>
+                            <div>$${item.price || '0.00'}</div>
+                            <div>${item.quantity || 1}</div>
+                        </div>
+                    `).join('')}
+                    ${data.length > 5 ? `<div class="preview-more">... and ${data.length - 5} more items</div>` : ''}
+                </div>
+            </div>
+        `;
+        preview.innerHTML = previewHtml;
+        document.getElementById('previewSection').style.display = 'block';
+        document.getElementById('generateBtn').disabled = false;
+    }
+
+    async generateLabels() {
+        const format = document.getElementById('labelFormat').value;
+        
+        try {
+            const response = await fetch('/labels/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    format: format,
+                    items: this.uploadedData
+                })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showResult(result);
+            } else {
+                this.showError(result.error);
+            }
+        } catch (error) {
+            this.showError('Failed to generate labels');
+        }
+    }
+
+    showResult(result) {
+        const resultContent = document.getElementById('resultContent');
+        resultContent.innerHTML = `
+            <div class="result-success">
+                <div class="result-info">
+                    <h4>✓ Labels Generated Successfully!</h4>
+                    <p><strong>Labels created:</strong> ${result.label_count}</p>
+                    <p><strong>Format:</strong> ${result.format_name}</p>
+                </div>
+                <a href="${result.download_url}" class="btn btn-success" download>
+                    📥 Download PDF
+                </a>
+            </div>
+        `;
+        document.getElementById('resultSection').style.display = 'block';
+    }
+
+    showError(message) {
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.innerHTML += `<div class="error-message">${message}</div>`;
+    }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new LabelPrinter();
+});
+</script>
+{% endblock %}
