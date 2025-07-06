@@ -15,7 +15,7 @@ function addRow() {
     newRow.className = 'item-row';
     newRow.innerHTML = `
         <div class="autocomplete-container">
-            <input type="text" placeholder="SKU" class="form-control sku-input" data-row="${rowCount}">
+            <input type="text" placeholder="SKU or Description" class="form-control sku-input" data-row="${rowCount}">
             <div class="autocomplete-dropdown" style="display: none;"></div>
         </div>
         <input type="number" placeholder="Price" step="0.01" min="0" class="form-control price-input" data-row="${rowCount}">
@@ -62,7 +62,19 @@ function collectItems() {
         const quantity = parseInt(row.querySelector('.qty-input').value);
         
         if (sku && !isNaN(price) && !isNaN(quantity) && quantity > 0) {
-            items.push({ sku, price, quantity });
+            // Find the product to get case quantity
+            const product = productsData.find(p => 
+                p.sku.toLowerCase() === sku.toLowerCase() || 
+                p.description.toLowerCase().includes(sku.toLowerCase())
+            );
+            
+            items.push({
+                sku: sku,
+                price: price,
+                quantity: quantity,
+                case_qty: product ? product.case_qty : 1,
+                description: product ? product.description : ''
+            });
         }
     });
     
@@ -119,37 +131,34 @@ function generateLabels() {
 }
 
 function resetForm() {
+    // Clear all rows except the first one
     const grid = document.getElementById('itemsGrid');
-    grid.innerHTML = `
-        <div class="item-row">
-            <input type="text" placeholder="SKU" class="form-control sku-input" data-row="0">
-            <input type="number" placeholder="Price" step="0.01" min="0" class="form-control price-input" data-row="0">
-            <input type="number" placeholder="QTY" min="1" value="1" class="form-control qty-input" data-row="0">
-            <button onclick="removeRow(0)" class="btn-remove" style="visibility: hidden;">×</button>
-        </div>
-    `;
+    const rows = grid.querySelectorAll('.item-row');
+    for (let i = 1; i < rows.length; i++) {
+        rows[i].remove();
+    }
     
-    rowCount = 1;
+    // Clear the first row
+    const firstRow = grid.querySelector('.item-row');
+    firstRow.querySelector('.sku-input').value = '';
+    firstRow.querySelector('.price-input').value = '';
+    firstRow.querySelector('.qty-input').value = '1';
+    
+    // Hide result section and show main sections
+    document.getElementById('resultSection').style.display = 'none';
     document.querySelector('.main-section').style.display = 'block';
     document.querySelector('.csv-upload-section').style.display = 'block';
-    document.getElementById('resultSection').style.display = 'none';
     
-    // Re-setup autocomplete for initial row
+    updateRemoveButtons();
+}
+
+// Initialize the first row with autocomplete
+document.addEventListener('DOMContentLoaded', function() {
     const initialSkuInput = document.querySelector('.sku-input');
-    if (initialSkuInput && !initialSkuInput.closest('.autocomplete-container')) {
-        const container = document.createElement('div');
-        container.className = 'autocomplete-container';
-        const dropdown = document.createElement('div');
-        dropdown.className = 'autocomplete-dropdown';
-        dropdown.style.display = 'none';
-        
-        initialSkuInput.parentNode.insertBefore(container, initialSkuInput);
-        container.appendChild(initialSkuInput);
-        container.appendChild(dropdown);
-        
+    if (initialSkuInput) {
         setupAutocomplete(initialSkuInput);
     }
-}
+});
 
 function setupAutocomplete(input) {
     const container = input.closest('.autocomplete-container');
@@ -162,8 +171,10 @@ function setupAutocomplete(input) {
             return;
         }
         
+        // Search both SKU and description
         const matches = productsData.filter(product => 
-            product.sku.toLowerCase().includes(query)
+            product.sku.toLowerCase().includes(query) ||
+            product.description.toLowerCase().includes(query)
         ).slice(0, 8);
         
         if (matches.length === 0) {
@@ -172,8 +183,9 @@ function setupAutocomplete(input) {
         }
         
         dropdown.innerHTML = matches.map(product => 
-            `<div class="autocomplete-item" data-sku="${product.sku}" data-price="${product.price}">
-                <strong>${product.sku}</strong> - $${product.price.toFixed(2)}
+            `<div class="autocomplete-item" data-sku="${product.sku}" data-price="${product.price}" data-case-qty="${product.case_qty}" data-description="${product.description}">
+                <strong>${product.sku}</strong> - $${product.price.toFixed(2)}<br>
+                <small style="color: #666;">${product.description} (Case: ${product.case_qty})</small>
             </div>`
         ).join('');
         
@@ -185,6 +197,8 @@ function setupAutocomplete(input) {
         if (item) {
             const sku = item.dataset.sku;
             const price = item.dataset.price;
+            const caseQty = item.dataset.caseQty;
+            const description = item.dataset.description;
             
             input.value = sku;
             const row = input.closest('.item-row');
@@ -200,38 +214,73 @@ function setupAutocomplete(input) {
             dropdown.style.display = 'none';
         }
     });
+    
+    input.addEventListener('keydown', function(e) {
+        const items = dropdown.querySelectorAll('.autocomplete-item');
+        let selectedIndex = Array.from(items).findIndex(item => item.classList.contains('selected'));
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (selectedIndex < items.length - 1) {
+                if (selectedIndex >= 0) items[selectedIndex].classList.remove('selected');
+                items[selectedIndex + 1].classList.add('selected');
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (selectedIndex > 0) {
+                items[selectedIndex].classList.remove('selected');
+                items[selectedIndex - 1].classList.add('selected');
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0) {
+                items[selectedIndex].click();
+            }
+        } else if (e.key === 'Escape') {
+            dropdown.style.display = 'none';
+        }
+    });
 }
 
-// CSV Upload handling
-const uploadArea = document.getElementById('uploadArea');
-const fileInput = document.getElementById('fileInput');
+// File upload functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', handleDragOver);
+    uploadArea.addEventListener('dragleave', handleDragLeave);
+    uploadArea.addEventListener('drop', handleDrop);
+    
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            uploadFile(this.files[0]);
+        }
+    });
+});
 
-uploadArea.addEventListener('click', () => fileInput.click());
-uploadArea.addEventListener('dragover', (e) => {
+function handleDragOver(e) {
     e.preventDefault();
-    uploadArea.classList.add('drag-over');
-});
-uploadArea.addEventListener('dragleave', () => {
-    uploadArea.classList.remove('drag-over');
-});
-uploadArea.addEventListener('drop', (e) => {
+    e.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
     e.preventDefault();
-    uploadArea.classList.remove('drag-over');
+    e.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
     
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-        handleFileUpload(files[0]);
+        uploadFile(files[0]);
     }
-});
+}
 
-fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-        handleFileUpload(e.target.files[0]);
-    }
-});
-
-function handleFileUpload(file) {
-    if (!file.name.endsWith('.csv')) {
+function uploadFile(file) {
+    if (!file.name.toLowerCase().endsWith('.csv')) {
         alert('Please upload a CSV file');
         return;
     }
@@ -239,6 +288,8 @@ function handleFileUpload(file) {
     const formData = new FormData();
     formData.append('file', file);
     
+    const uploadArea = document.getElementById('uploadArea');
+    const originalText = uploadArea.innerHTML;
     uploadArea.innerHTML = '<div class="loading"></div> Processing...';
     
     fetch('/labels/upload', {
@@ -248,7 +299,8 @@ function handleFileUpload(file) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            addCsvDataToRows(data.data);
+            populateFromCSV(data.data);
+            alert(`Loaded ${data.row_count} items from CSV`);
         } else {
             alert(data.error || 'Upload failed');
         }
@@ -258,68 +310,38 @@ function handleFileUpload(file) {
         alert('An error occurred during upload');
     })
     .finally(() => {
-        uploadArea.innerHTML = '<span class="upload-text">Drop CSV here or click to upload</span>';
+        uploadArea.innerHTML = originalText;
+        document.getElementById('fileInput').value = '';
     });
 }
 
-function addCsvDataToRows(csvData) {
+function populateFromCSV(data) {
     const grid = document.getElementById('itemsGrid');
+    
+    // Clear existing rows
     grid.innerHTML = '';
     rowCount = 0;
     
-    csvData.forEach((item, index) => {
+    // Add rows for each item
+    data.forEach((item, index) => {
         const newRow = document.createElement('div');
         newRow.className = 'item-row';
         newRow.innerHTML = `
             <div class="autocomplete-container">
-                <input type="text" placeholder="SKU" class="form-control sku-input" data-row="${index}" value="${item.sku || ''}">
+                <input type="text" placeholder="SKU or Description" class="form-control sku-input" data-row="${rowCount}" value="${item.sku || ''}">
                 <div class="autocomplete-dropdown" style="display: none;"></div>
             </div>
-            <input type="number" placeholder="Price" step="0.01" min="0" class="form-control price-input" data-row="${index}" value="${item.price || ''}">
-            <input type="number" placeholder="QTY" min="1" class="form-control qty-input" data-row="${index}" value="${item.quantity || 1}">
-            <button onclick="removeRow(${index})" class="btn-remove">×</button>
+            <input type="number" placeholder="Price" step="0.01" min="0" class="form-control price-input" data-row="${rowCount}" value="${item.price || ''}">
+            <input type="number" placeholder="QTY" min="1" value="${item.quantity || 1}" class="form-control qty-input" data-row="${rowCount}">
+            <button onclick="removeRow(${rowCount})" class="btn-remove">×</button>
         `;
         grid.appendChild(newRow);
+        
         setupAutocomplete(newRow.querySelector('.sku-input'));
         rowCount++;
     });
     
+    // Add one empty row at the end
+    addRow();
     updateRemoveButtons();
 }
-
-// Setup autocomplete for initial row
-document.addEventListener('DOMContentLoaded', function() {
-    const initialSkuInput = document.querySelector('.sku-input');
-    if (initialSkuInput) {
-        const container = document.createElement('div');
-        container.className = 'autocomplete-container';
-        const dropdown = document.createElement('div');
-        dropdown.className = 'autocomplete-dropdown';
-        dropdown.style.display = 'none';
-        
-        initialSkuInput.parentNode.insertBefore(container, initialSkuInput);
-        container.appendChild(initialSkuInput);
-        container.appendChild(dropdown);
-        
-        setupAutocomplete(initialSkuInput);
-    }
-});
-
-// Enter key handling
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && e.target.matches('.form-control')) {
-        document.querySelectorAll('.autocomplete-dropdown').forEach(dropdown => {
-            dropdown.style.display = 'none';
-        });
-        
-        const currentRow = e.target.closest('.item-row');
-        const inputs = currentRow.querySelectorAll('.form-control');
-        const currentIndex = Array.from(inputs).indexOf(e.target);
-        
-        if (currentIndex < inputs.length - 1) {
-            inputs[currentIndex + 1].focus();
-        } else {
-            addRow();
-        }
-    }
-});
