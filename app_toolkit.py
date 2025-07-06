@@ -1,3 +1,4 @@
+# Version: 2025-07-06-14:25 - Autocomplete fix deployment
 from flask import Flask, render_template, request, send_file, jsonify, flash, redirect, url_for, Blueprint
 from werkzeug.utils import secure_filename
 import os
@@ -83,7 +84,8 @@ def debug_files():
     debug_info = {
         'cwd': os.getcwd(),
         'data_exists': os.path.exists('data'),
-        'products_exists': os.path.exists('data/products.csv')
+        'products_exists': os.path.exists('data/products.csv'),
+        'deployment_version': '2025-07-06-14:25'
     }
     
     if os.path.exists('data'):
