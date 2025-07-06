@@ -5,3 +5,4 @@ flask==3.0.0
 werkzeug==3.0.1
 gunicorn==21.2.0
 python-barcode==0.15.1
+supabase==2.3.0
