@@ -49,16 +49,16 @@ def dashboard():
         },
         {
             'name': 'Report Generator',
-            'description': 'Create custom business reports',
+            'description': 'Generate custom business reports',
             'icon': '📈',
             'url': '/reports',
             'status': 'coming-soon'
         },
         {
-            'name': 'Price Updater',
-            'description': 'Bulk update product prices',
-            'icon': '💰',
-            'url': '/pricing',
+            'name': 'Data Analyzer',
+            'description': 'Analyze sales and product data',
+            'icon': '🔍',
+            'url': '/analyzer',
             'status': 'coming-soon'
         }
     ]
@@ -69,8 +69,8 @@ def dashboard():
 # ==========================================
 
 @app.route('/labels')
-def labels_index():
-    """Label printer tool"""
+def labels():
+    """Label printer main page"""
     return render_template('tools/labels.html', formats=LABEL_FORMATS)
 
 @app.route('/labels/products')
@@ -86,7 +86,9 @@ def labels_get_products():
             products.append({
                 'sku': row.get('Name', ''),
                 'price': float(row.get('Unit Price', 0)),
-                'id': row.get('Internal ID', '')
+                'id': row.get('Internal ID', ''),
+                'description': row.get('Description', ''),
+                'case_qty': int(row.get('Case Qty', 1))
             })
         
         return jsonify(products)
@@ -104,41 +106,61 @@ def labels_upload():
         return jsonify({'error': 'No file selected'}), 400
     
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        unique_filename = f"{timestamp}_{filename}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-        file.save(filepath)
-        
         try:
+            unique_filename = f"{uuid.uuid4().hex[:8]}_{secure_filename(file.filename)}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            file.save(filepath)
+            
             parser = CSVParser(filepath)
             data = parser.parse()
             
+            # Smart column mapping
             mapped_data = []
-            columns = parser.get_columns()
-            
             for row in data:
                 mapped_row = {}
-                # Smart column mapping
+                columns = list(row.keys())
+                
+                # Find SKU column
                 for col in columns:
-                    if 'sku' in col.lower() or 'code' in col.lower() or 'id' in col.lower():
+                    if any(keyword in col.lower() for keyword in ['sku', 'name', 'product', 'item']):
                         mapped_row['sku'] = row.get(col, '')
                         break
+                
+                # Find price column
                 for col in columns:
-                    if 'price' in col.lower() or 'cost' in col.lower():
-                        mapped_row['price'] = row.get(col, 0)
-                        break
-                for col in columns:
-                    if 'qty' in col.lower() or 'quantity' in col.lower() or 'qnty' in col.lower():
-                        mapped_row['quantity'] = row.get(col, 1)
+                    if any(keyword in col.lower() for keyword in ['price', 'cost', 'amount']):
+                        mapped_row['price'] = float(row.get(col, 0))
                         break
                 
+                # Find quantity column
+                for col in columns:
+                    if any(keyword in col.lower() for keyword in ['qty', 'quantity', 'qnty']):
+                        mapped_row['quantity'] = int(row.get(col, 1))
+                        break
+                
+                # Find description column
+                for col in columns:
+                    if 'description' in col.lower():
+                        mapped_row['description'] = row.get(col, '')
+                        break
+                
+                # Find case quantity column
+                for col in columns:
+                    if any(keyword in col.lower() for keyword in ['case qty', 'case_qty', 'case quantity']):
+                        mapped_row['case_qty'] = int(row.get(col, 1))
+                        break
+                
+                # Set defaults for missing fields
                 if 'sku' not in mapped_row:
                     mapped_row['sku'] = row.get('sku', '')
                 if 'price' not in mapped_row:
                     mapped_row['price'] = row.get('price', 0)
                 if 'quantity' not in mapped_row:
                     mapped_row['quantity'] = row.get('quantity', 1)
+                if 'description' not in mapped_row:
+                    mapped_row['description'] = row.get('description', '')
+                if 'case_qty' not in mapped_row:
+                    mapped_row['case_qty'] = row.get('case_qty', 1)
                 
                 mapped_data.append(mapped_row)
             
@@ -179,10 +201,8 @@ def labels_generate():
         return jsonify({
             'success': True,
             'download_url': f'/labels/download/{output_filename}',
-            'label_count': total_labels,
-            'format_name': LABEL_FORMATS[label_format].name
+            'label_count': total_labels
         })
-        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -190,36 +210,37 @@ def labels_generate():
 def labels_download(filename):
     """Download generated labels"""
     try:
-        path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
-        if os.path.exists(path):
-            return send_file(path, as_attachment=True, download_name=f'labels_{datetime.now().strftime("%Y%m%d")}.pdf')
-        return "File not found", 404
+        filepath = os.path.join(app.config['OUTPUT_FOLDER'], filename)
+        return send_file(filepath, as_attachment=True, download_name=filename)
     except Exception as e:
-        return str(e), 500
+        return jsonify({'error': 'File not found'}), 404
 
 # ==========================================
-# FUTURE TOOL ROUTES (Placeholders)
+# COMING SOON ROUTES
 # ==========================================
 
 @app.route('/inventory')
-def inventory_tool():
-    return render_template('tools/coming_soon.html', tool_name='Inventory Scanner')
-
 @app.route('/reports')
-def reports_tool():
-    return render_template('tools/coming_soon.html', tool_name='Report Generator')
-
-@app.route('/pricing')
-def pricing_tool():
-    return render_template('tools/coming_soon.html', tool_name='Price Updater')
+@app.route('/analyzer')
+def coming_soon():
+    """Placeholder for future tools"""
+    return render_template('tools/coming_soon.html')
 
 # ==========================================
-# API ROUTES
+# ERROR HANDLERS
 # ==========================================
 
-@app.route('/api/health')
-def health_check():
-    return jsonify({'status': 'healthy', 'tools': ['labels']})
+@app.errorhandler(413)
+def too_large(e):
+    return jsonify({'error': 'File too large'}), 413
+
+@app.errorhandler(404)
+def not_found(e):
+    return redirect(url_for('dashboard'))
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
