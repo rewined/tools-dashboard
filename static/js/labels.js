@@ -1,13 +1,35 @@
 let rowCount = 1;
 let productsData = [];
 
+// Fallback product data in case backend is unavailable
+const FALLBACK_PRODUCTS = [
+    {'sku': 'CF20101001', 'price': 78.00, 'id': '61220', 'description': 'Candlefish No. 1 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101002', 'price': 78.00, 'id': '104526', 'description': 'Candlefish No. 2 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101003', 'price': 78.00, 'id': '104527', 'description': 'Candlefish No. 3 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101004', 'price': 78.00, 'id': '61234', 'description': 'Candlefish No. 4 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101005', 'price': 78.00, 'id': '104528', 'description': 'Candlefish No. 5 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101006', 'price': 78.00, 'id': '104529', 'description': 'Candlefish No. 6 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101007', 'price': 78.00, 'id': '104530', 'description': 'Candlefish No. 7 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101008', 'price': 78.00, 'id': '61206', 'description': 'Candlefish No. 8 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101009', 'price': 78.00, 'id': '61196', 'description': 'Candlefish No. 9 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101010', 'price': 78.00, 'id': '104531', 'description': 'Candlefish No. 10 2.5 oz Tin-CASE(12)', 'case_qty': 12}
+];
+
 // Load products data on page load
 fetch('/labels/products')
     .then(response => response.json())
     .then(data => {
-        productsData = data;
+        if (data && data.length > 0) {
+            productsData = data;
+        } else {
+            // Use fallback data if backend returns empty array
+            productsData = FALLBACK_PRODUCTS;
+        }
     })
-    .catch(error => console.log('No products data found'));
+    .catch(error => {
+        console.log('Backend unavailable, using fallback products');
+        productsData = FALLBACK_PRODUCTS;
+    });
 
 function addRow() {
     const grid = document.getElementById('itemsGrid');
