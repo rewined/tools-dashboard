@@ -258,7 +258,7 @@
 }
 
 .btn-remove {
-    background: #e53e3e;
+    background: #9ca3af;
     border: none;
     color: white;
     border-radius: 50%;
@@ -274,7 +274,7 @@
 }
 
 .btn-remove:hover {
-    background: #c53030;
+    background: #6b7280;
 }
 
 .action-buttons {
