@@ -19,7 +19,7 @@ class PDFGeneratorBarcode:
     
     def generate_labels(self, data: List[Dict[str, Any]], label_format: LabelFormat, 
                        output_filename: str) -> str:
-        """Generate labels with barcode, SKU text, and price. Repeat based on quantity."""
+        """Generate labels with barcode, SKU text, price, and case quantity. Repeat based on quantity."""
         output_path = os.path.join(self.output_dir, output_filename)
         c = canvas.Canvas(output_path, pagesize=letter)
         
@@ -78,11 +78,12 @@ class PDFGeneratorBarcode:
     
     def _draw_barcode_label(self, canvas_obj: canvas.Canvas, x: float, y: float, 
                            width: float, height: float, item_data: Dict[str, Any]):
-        """Draw a label with barcode at top, SKU text in middle, and price at bottom."""
+        """Draw a label with barcode at top, SKU text, price, and case quantity."""
         
         # Get data and convert to uppercase
         sku = str(item_data.get('sku', '')).upper()
         price = item_data.get('price', 0)
+        case_qty = item_data.get('case_qty', 1)
         
         # Format price
         if isinstance(price, (int, float)):
@@ -90,25 +91,30 @@ class PDFGeneratorBarcode:
         else:
             price_text = str(price).upper()
         
-        # Layout calculations with better spacing
-        padding = 0.05 * inch
-        element_spacing = 0.03 * inch
+        # Format case quantity
+        case_text = f"Case: {case_qty}"
         
-        # Three sections with better proportions
-        barcode_height = height * 0.40  # 40% for barcode
-        sku_height = height * 0.30     # 30% for SKU
-        price_height = height * 0.30   # 30% for price
+        # Layout calculations with better spacing for 4 elements
+        padding = 0.04 * inch
+        element_spacing = 0.02 * inch
+        
+        # Four sections: barcode, SKU, price, case quantity
+        barcode_height = height * 0.35   # 35% for barcode
+        sku_height = height * 0.25       # 25% for SKU
+        price_height = height * 0.25     # 25% for price
+        case_height = height * 0.15      # 15% for case quantity
         
         # Available text areas (minus padding and spacing)
         text_width = width - (2 * padding)
         sku_text_height = sku_height - element_spacing
         price_text_height = price_height - element_spacing
+        case_text_height = case_height - element_spacing
         
         # Draw barcode at top (centered)
         if sku and len(sku) > 0:
             try:
                 # Create barcode with appropriate sizing
-                barcode_draw_height = min(barcode_height * 0.8, 0.4 * inch)  # Max 0.4 inch
+                barcode_draw_height = min(barcode_height * 0.8, 0.35 * inch)  # Max 0.35 inch
                 barcode = code128.Code128(sku, barHeight=barcode_draw_height, barWidth=0.6)
                 
                 # Get actual barcode dimensions
@@ -123,7 +129,7 @@ class PDFGeneratorBarcode:
                 
                 # Center the barcode horizontally and vertically in its section
                 barcode_x = x + (width - barcode_width) / 2
-                barcode_y = y + price_height + sku_height + (barcode_height - barcode_draw_height) / 2
+                barcode_y = y + price_height + sku_height + case_height + (barcode_height - barcode_draw_height) / 2
                 
                 # Draw the barcode
                 barcode.drawOn(canvas_obj, barcode_x, barcode_y)
@@ -132,19 +138,25 @@ class PDFGeneratorBarcode:
                 # If barcode fails, draw a placeholder
                 placeholder_font_size = self._get_optimal_font_size(canvas_obj, f"BARCODE: {sku}", text_width, barcode_height * 0.8)
                 canvas_obj.setFont("Helvetica", placeholder_font_size)
-                canvas_obj.drawCentredString(x + width/2, y + price_height + sku_height + barcode_height/2, f"BARCODE: {sku}")
+                canvas_obj.drawCentredString(x + width/2, y + price_height + sku_height + case_height + barcode_height/2, f"BARCODE: {sku}")
         
-        # Draw SKU text in middle (centered, auto-sized)
+        # Draw SKU text (centered, auto-sized)
         sku_font_size = self._get_optimal_font_size(canvas_obj, sku, text_width, sku_text_height)
         canvas_obj.setFont("Helvetica-Bold", sku_font_size)
-        sku_y = y + price_height + (sku_height/2)
+        sku_y = y + price_height + case_height + (sku_height/2)
         canvas_obj.drawCentredString(x + width/2, sku_y, sku)
         
-        # Draw price at bottom (centered, auto-sized)
+        # Draw price (centered, auto-sized)
         price_font_size = self._get_optimal_font_size(canvas_obj, price_text, text_width, price_text_height)
         canvas_obj.setFont("Helvetica-Bold", price_font_size)
-        price_y = y + (price_height/2)
+        price_y = y + case_height + (price_height/2)
         canvas_obj.drawCentredString(x + width/2, price_y, price_text)
+        
+        # Draw case quantity at bottom (centered, smaller font)
+        case_font_size = self._get_optimal_font_size(canvas_obj, case_text, text_width, case_text_height, "Helvetica")
+        canvas_obj.setFont("Helvetica", case_font_size)
+        case_y = y + (case_height/2)
+        canvas_obj.drawCentredString(x + width/2, case_y, case_text)
         
         # Optional: Draw border for debugging
         # canvas_obj.rect(x, y, width, height)
