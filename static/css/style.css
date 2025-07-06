@@ -246,10 +246,9 @@ body {
 
 .btn-secondary:hover {
     background: #f9fafb;
-    border-color: #20b2aa;
-    color: #20b2aa;
+    border-color: #9ca3af;
+    color: #4b5563;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(32, 178, 170, 0.1);
 }
 
 .button-group {
@@ -497,15 +496,15 @@ body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-weight: normal;
+    font-weight: bold;
     font-size: 14px;
     transition: all 0.2s ease;
 }
 
 .btn-remove:hover {
-    background: #f3f4f6;
-    color: #6b7280;
-    border-color: #d1d5db;
+    background: #f1f5f9;
+    color: #64748b;
+    border-color: #cbd5e1;
 }
 
 .action-buttons {
