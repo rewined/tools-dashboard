@@ -1,0 +1,11 @@
+This file is created to trigger Railway auto-deployment.
+Timestamp: 2025-07-06 14:10:00
+
+Recent changes that need to be deployed:
+- Added fallback sample products for autocomplete
+- Fixed gray X button styling  
+- Added debug endpoint
+- Enhanced search functionality (SKU + description)
+- Case quantity support in PDF labels
+
+The autocomplete should work once this deploys.
