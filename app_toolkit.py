@@ -1,11 +1,10 @@
-# Version: 2025-07-06-16:00 - Supabase integration for product data
+# Version: 2025-07-06-17:00 - Flexible database configuration
 from flask import Flask, render_template, request, send_file, jsonify, flash, redirect, url_for, Blueprint
 from werkzeug.utils import secure_filename
 import os
 import tempfile
 import uuid
 from datetime import datetime
-from supabase import create_client, Client
 
 # Import existing label printer functionality
 from src.csv_parser import CSVParser
@@ -18,12 +17,18 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['OUTPUT_FOLDER'] = 'static/output'
 
-# Supabase configuration
-SUPABASE_URL = "https://ounsopanyjrjqmhbmxej.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91bnNvcGFueWpyanFtaGJteGVqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTg0MjM5OCwiZXhwIjoyMDY3NDE4Mzk4fQ.IesrOV1H-jGmKx2FtBLbtFvmXH8JA2ArMIjyvGO6aUU"
+# Database configuration - can be Supabase or any other database
+DATABASE_URL = os.environ.get('DATABASE_URL')
+SUPABASE_URL = os.environ.get('SUPABASE_URL', "https://ounsopanyjrjqmhbmxej.supabase.co")
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91bnNvcGFueWpyanFtaGJteGVqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTg0MjM5OCwiZXhwIjoyMDY3NDE4Mzk4fQ.IesrOV1H-jGmKx2FtBLbtFvmXH8JA2ArMIjyvGO6aUU")
 
-# Initialize Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Initialize database client if available
+supabase_client = None
+try:
+    from supabase import create_client, Client
+    supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+except ImportError:
+    print("Supabase client not available - falling back to CSV/sample data")
 
 # Ensure upload and output directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -38,10 +43,37 @@ SAMPLE_PRODUCTS = [
     {'sku': 'CF20101003', 'price': 78.00, 'id': '104527', 'description': 'Candlefish No. 3 2.5 oz Tin-CASE(12)', 'case_qty': 12},
     {'sku': 'CF20101004', 'price': 78.00, 'id': '61234', 'description': 'Candlefish No. 4 2.5 oz Tin-CASE(12)', 'case_qty': 12},
     {'sku': 'CF20101005', 'price': 78.00, 'id': '104528', 'description': 'Candlefish No. 5 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101006', 'price': 78.00, 'id': '104529', 'description': 'Candlefish No. 6 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101007', 'price': 78.00, 'id': '104530', 'description': 'Candlefish No. 7 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101008', 'price': 78.00, 'id': '61206', 'description': 'Candlefish No. 8 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101009', 'price': 78.00, 'id': '61196', 'description': 'Candlefish No. 9 2.5 oz Tin-CASE(12)', 'case_qty': 12},
+    {'sku': 'CF20101010', 'price': 78.00, 'id': '104531', 'description': 'Candlefish No. 10 2.5 oz Tin-CASE(12)', 'case_qty': 12},
 ]
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_products_from_database():
+    """Try to get products from database (Supabase or PostgreSQL)"""
+    products = []
+    
+    if supabase_client:
+        try:
+            result = supabase_client.table('products').select('*').execute()
+            if result.data:
+                for row in result.data:
+                    products.append({
+                        'sku': row.get('name', ''),
+                        'price': float(row.get('unit_price', 0)),
+                        'id': str(row.get('internal_id', '')),
+                        'description': row.get('description', ''),
+                        'case_qty': int(row.get('case_qty', 1))
+                    })
+                return products
+        except Exception as e:
+            print(f"Supabase error: {e}")
+    
+    return None
 
 # ==========================================
 # MAIN DASHBOARD ROUTES
@@ -88,34 +120,30 @@ def dashboard():
 
 @app.route('/debug/files')
 def debug_files():
-    """Debug endpoint to check file system"""
+    """Debug endpoint to check file system and database connections"""
     debug_info = {
         'cwd': os.getcwd(),
         'data_exists': os.path.exists('data'),
         'products_exists': os.path.exists('data/products.csv'),
-        'deployment_version': '2025-07-06-16:00-supabase',
-        'supabase_connected': False
+        'deployment_version': '2025-07-06-17:00-flexible-db',
+        'database_configured': False,
+        'supabase_available': supabase_client is not None
     }
     
-    # Test Supabase connection
-    try:
-        result = supabase.table('products').select('*').limit(1).execute()
-        debug_info['supabase_connected'] = True
-        debug_info['supabase_products_count'] = len(result.data) if result.data else 0
-    except Exception as e:
-        debug_info['supabase_error'] = str(e)
+    # Test database connection
+    if supabase_client:
+        try:
+            result = supabase_client.table('products').select('id').limit(1).execute()
+            debug_info['database_configured'] = True
+            debug_info['products_in_db'] = len(result.data) if result.data else 0
+        except Exception as e:
+            debug_info['database_error'] = str(e)
     
     if os.path.exists('data'):
         try:
             debug_info['data_files'] = os.listdir('data')
         except:
             debug_info['data_files'] = 'Cannot list files'
-    
-    # List all files in current directory
-    try:
-        debug_info['root_files'] = os.listdir('.')
-    except:
-        debug_info['root_files'] = 'Cannot list root files'
     
     return jsonify(debug_info)
 
@@ -130,53 +158,38 @@ def labels():
 
 @app.route('/labels/products')
 def labels_get_products():
-    """Return product data for autocomplete from Supabase"""
+    """Return product data for autocomplete - try database first, then CSV, then samples"""
     try:
-        # Query all products from Supabase
-        result = supabase.table('products').select('*').execute()
+        # Try database first
+        products = get_products_from_database()
+        if products:
+            return jsonify(products)
         
-        if result.data:
+        # Try CSV fallback
+        products_file = os.path.join('data', 'products.csv')
+        if os.path.exists(products_file):
+            parser = CSVParser(products_file)
+            data = parser.parse()
+            
             products = []
-            for row in result.data:
+            for row in data:
                 products.append({
-                    'sku': row.get('name', ''),
-                    'price': float(row.get('unit_price', 0)),
-                    'id': str(row.get('internal_id', '')),
-                    'description': row.get('description', ''),
-                    'case_qty': int(row.get('case_qty', 1))
+                    'sku': row.get('Name', ''),
+                    'price': float(row.get('Unit Price', 0)),
+                    'id': row.get('Internal ID', ''),
+                    'description': row.get('Description', ''),
+                    'case_qty': int(row.get('Case Qty', 1))
                 })
             
             return jsonify(products)
-        else:
-            # Fallback to sample products if no data in Supabase
-            return jsonify(SAMPLE_PRODUCTS)
+        
+        # Final fallback to sample products
+        return jsonify(SAMPLE_PRODUCTS)
             
     except Exception as e:
-        # If Supabase fails, try CSV fallback, then sample products
-        try:
-            products_file = os.path.join('data', 'products.csv')
-            
-            if os.path.exists(products_file):
-                parser = CSVParser(products_file)
-                data = parser.parse()
-                
-                products = []
-                for row in data:
-                    products.append({
-                        'sku': row.get('Name', ''),
-                        'price': float(row.get('Unit Price', 0)),
-                        'id': row.get('Internal ID', ''),
-                        'description': row.get('Description', ''),
-                        'case_qty': int(row.get('Case Qty', 1))
-                    })
-                
-                return jsonify(products)
-            else:
-                return jsonify(SAMPLE_PRODUCTS)
-                
-        except Exception as csv_e:
-            # Final fallback to sample products
-            return jsonify(SAMPLE_PRODUCTS)
+        # If everything fails, return sample products
+        print(f"Error getting products: {e}")
+        return jsonify(SAMPLE_PRODUCTS)
 
 @app.route('/labels/upload', methods=['POST'])
 def labels_upload():
@@ -254,7 +267,8 @@ def labels_upload():
                 'row_count': len(mapped_data)
             })
         except Exception as e:
-            os.remove(filepath)
+            if os.path.exists(filepath):
+                os.remove(filepath)
             return jsonify({'error': f'Error parsing CSV: {str(e)}'}), 400
     
     return jsonify({'error': 'Invalid file type. Please upload a CSV file.'}), 400
