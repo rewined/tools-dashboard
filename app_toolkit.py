@@ -1,4 +1,4 @@
-# Version: 2025-07-06-14:25 - Autocomplete fix deployment
+# Version: 2025-07-06-15:00 - Full CSV with description search and case qty
 from flask import Flask, render_template, request, send_file, jsonify, flash, redirect, url_for, Blueprint
 from werkzeug.utils import secure_filename
 import os
@@ -23,7 +23,7 @@ os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'csv'}
 
-# Sample products as fallback
+# Sample products as fallback (expanded set)
 SAMPLE_PRODUCTS = [
     {'sku': 'CF20101001', 'price': 78.00, 'id': '61220', 'description': 'Candlefish No. 1 2.5 oz Tin-CASE(12)', 'case_qty': 12},
     {'sku': 'CF20101002', 'price': 78.00, 'id': '104526', 'description': 'Candlefish No. 2 2.5 oz Tin-CASE(12)', 'case_qty': 12},
@@ -85,7 +85,7 @@ def debug_files():
         'cwd': os.getcwd(),
         'data_exists': os.path.exists('data'),
         'products_exists': os.path.exists('data/products.csv'),
-        'deployment_version': '2025-07-06-14:25'
+        'deployment_version': '2025-07-06-15:00'
     }
     
     if os.path.exists('data'):
