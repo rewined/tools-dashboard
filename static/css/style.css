@@ -238,15 +238,18 @@ body {
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, #e2e8f0 0%, #f7fafc 100%);
-    color: #2d3748;
-    border: 1px solid #e2e8f0;
+    background: transparent;
+    color: #6b7280;
+    border: 2px dashed #d1d5db;
+    box-shadow: none;
 }
 
 .btn-secondary:hover {
-    background: linear-gradient(135deg, #cbd5e0 0%, #e2e8f0 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(45, 55, 72, 0.1);
+    background: #f9fafb;
+    border-color: #20b2aa;
+    color: #20b2aa;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(32, 178, 170, 0.1);
 }
 
 .button-group {
@@ -484,25 +487,25 @@ body {
 }
 
 .btn-remove {
-    background: linear-gradient(135deg, #e2e8f0 0%, #f7fafc 100%);
-    color: #718096;
-    border: none;
-    border-radius: 8px;
-    width: 32px;
-    height: 32px;
+    background: #f8fafc;
+    color: #9ca3af;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-weight: bold;
-    font-size: 16px;
-    transition: all 0.3s ease;
+    font-weight: normal;
+    font-size: 14px;
+    transition: all 0.2s ease;
 }
 
 .btn-remove:hover {
-    background: linear-gradient(135deg, #cbd5e0 0%, #e2e8f0 100%);
-    color: #4a5568;
-    transform: scale(1.1);
+    background: #f3f4f6;
+    color: #6b7280;
+    border-color: #d1d5db;
 }
 
 .action-buttons {
