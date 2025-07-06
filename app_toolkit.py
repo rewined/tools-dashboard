@@ -1,10 +1,11 @@
-# Version: 2025-07-06-15:00 - Full CSV with description search and case qty
+# Version: 2025-07-06-16:00 - Supabase integration for product data
 from flask import Flask, render_template, request, send_file, jsonify, flash, redirect, url_for, Blueprint
 from werkzeug.utils import secure_filename
 import os
 import tempfile
 import uuid
 from datetime import datetime
+from supabase import create_client, Client
 
 # Import existing label printer functionality
 from src.csv_parser import CSVParser
@@ -16,6 +17,13 @@ app.secret_key = 'your-secret-key-here'  # Change this in production
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['OUTPUT_FOLDER'] = 'static/output'
+
+# Supabase configuration
+SUPABASE_URL = "https://ounsopanyjrjqmhbmxej.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91bnNvcGFueWpyanFtaGJteGVqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTg0MjM5OCwiZXhwIjoyMDY3NDE4Mzk4fQ.IesrOV1H-jGmKx2FtBLbtFvmXH8JA2ArMIjyvGO6aUU"
+
+# Initialize Supabase client
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Ensure upload and output directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -85,8 +93,17 @@ def debug_files():
         'cwd': os.getcwd(),
         'data_exists': os.path.exists('data'),
         'products_exists': os.path.exists('data/products.csv'),
-        'deployment_version': '2025-07-06-15:00'
+        'deployment_version': '2025-07-06-16:00-supabase',
+        'supabase_connected': False
     }
+    
+    # Test Supabase connection
+    try:
+        result = supabase.table('products').select('*').limit(1).execute()
+        debug_info['supabase_connected'] = True
+        debug_info['supabase_products_count'] = len(result.data) if result.data else 0
+    except Exception as e:
+        debug_info['supabase_error'] = str(e)
     
     if os.path.exists('data'):
         try:
@@ -113,33 +130,53 @@ def labels():
 
 @app.route('/labels/products')
 def labels_get_products():
-    """Return product data for autocomplete"""
+    """Return product data for autocomplete from Supabase"""
     try:
-        products_file = os.path.join('data', 'products.csv')
+        # Query all products from Supabase
+        result = supabase.table('products').select('*').execute()
         
-        # Try to load from CSV first
-        if os.path.exists(products_file):
-            parser = CSVParser(products_file)
-            data = parser.parse()
-            
+        if result.data:
             products = []
-            for row in data:
+            for row in result.data:
                 products.append({
-                    'sku': row.get('Name', ''),
-                    'price': float(row.get('Unit Price', 0)),
-                    'id': row.get('Internal ID', ''),
-                    'description': row.get('Description', ''),
-                    'case_qty': int(row.get('Case Qty', 1))
+                    'sku': row.get('name', ''),
+                    'price': float(row.get('unit_price', 0)),
+                    'id': str(row.get('internal_id', '')),
+                    'description': row.get('description', ''),
+                    'case_qty': int(row.get('case_qty', 1))
                 })
             
             return jsonify(products)
         else:
-            # Fallback to sample products
+            # Fallback to sample products if no data in Supabase
             return jsonify(SAMPLE_PRODUCTS)
             
     except Exception as e:
-        # If all else fails, return sample products
-        return jsonify(SAMPLE_PRODUCTS)
+        # If Supabase fails, try CSV fallback, then sample products
+        try:
+            products_file = os.path.join('data', 'products.csv')
+            
+            if os.path.exists(products_file):
+                parser = CSVParser(products_file)
+                data = parser.parse()
+                
+                products = []
+                for row in data:
+                    products.append({
+                        'sku': row.get('Name', ''),
+                        'price': float(row.get('Unit Price', 0)),
+                        'id': row.get('Internal ID', ''),
+                        'description': row.get('Description', ''),
+                        'case_qty': int(row.get('Case Qty', 1))
+                    })
+                
+                return jsonify(products)
+            else:
+                return jsonify(SAMPLE_PRODUCTS)
+                
+        except Exception as csv_e:
+            # Final fallback to sample products
+            return jsonify(SAMPLE_PRODUCTS)
 
 @app.route('/labels/upload', methods=['POST'])
 def labels_upload():
