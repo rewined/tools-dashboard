@@ -77,7 +77,25 @@ def labels():
 def labels_get_products():
     """Return product data for autocomplete"""
     try:
+        # Check if data directory exists
+        data_dir = 'data'
+        if not os.path.exists(data_dir):
+            print(f"Data directory does not exist: {data_dir}")
+            return jsonify({'error': 'Data directory not found', 'debug': f'Directory {data_dir} does not exist'})
+        
         products_file = os.path.join('data', 'products.csv')
+        
+        # Check if products.csv exists
+        if not os.path.exists(products_file):
+            print(f"Products file does not exist: {products_file}")
+            # List files in data directory for debugging
+            try:
+                files_in_data = os.listdir(data_dir)
+                print(f"Files in data directory: {files_in_data}")
+                return jsonify({'error': 'Products file not found', 'debug': f'File {products_file} does not exist', 'files_in_data': files_in_data})
+            except:
+                return jsonify({'error': 'Products file not found', 'debug': f'File {products_file} does not exist'})
+        
         parser = CSVParser(products_file)
         data = parser.parse()
         
@@ -91,9 +109,11 @@ def labels_get_products():
                 'case_qty': int(row.get('Case Qty', 1))
             })
         
+        print(f"Successfully loaded {len(products)} products")
         return jsonify(products)
     except Exception as e:
-        return jsonify([])
+        print(f"Error in labels_get_products: {str(e)}")
+        return jsonify({'error': f'Error loading products: {str(e)}'})
 
 @app.route('/labels/upload', methods=['POST'])
 def labels_upload():
