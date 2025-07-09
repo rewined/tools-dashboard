@@ -83,5 +83,18 @@ LABEL_FORMATS = {
         margin_bottom=0.5,
         horizontal_spacing=0.125,
         vertical_spacing=0.125
+    ),
+    "ol1000wx": LabelFormat(
+        name="OnlineLabels OL1000WX (1.5\" x 1\")",
+        width=1.5,
+        height=1.0,
+        columns=5,
+        rows=10,
+        margin_top=0.5,
+        margin_left=0.25,
+        margin_right=0.25,
+        margin_bottom=0.5,
+        horizontal_spacing=0.125,
+        vertical_spacing=0
     )
 }
