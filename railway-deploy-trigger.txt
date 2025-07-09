@@ -8,4 +8,4 @@ Recent changes that need to be deployed:
 - Enhanced search functionality (SKU + description)
 - Case quantity support in PDF labels
 
-The autocomplete should work once this deploys.
+The autocomplete should work once this deploys.Deployment trigger: Wed Jul  9 15:04:17 EDT 2025
