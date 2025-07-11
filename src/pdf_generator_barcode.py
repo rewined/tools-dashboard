@@ -94,15 +94,15 @@ class PDFGeneratorBarcode:
         # Format case quantity
         case_text = f"Case: {case_qty}"
         
-        # Layout calculations with better spacing for 4 elements
-        padding = 0.04 * inch
-        element_spacing = 0.02 * inch
+        # Layout calculations with tighter spacing for 1" height labels
+        padding = 0.03 * inch  # Reduced padding
+        element_spacing = 0.01 * inch  # Reduced spacing between elements
         
-        # Four sections: barcode, SKU, price, case quantity
-        barcode_height = height * 0.35   # 35% for barcode
-        sku_height = height * 0.25       # 25% for SKU
-        price_height = height * 0.25     # 25% for price
-        case_height = height * 0.15      # 15% for case quantity
+        # Four sections: barcode, SKU, price, case quantity - adjusted for 1" labels
+        barcode_height = height * 0.40   # 40% for barcode
+        sku_height = height * 0.20       # 20% for SKU
+        price_height = height * 0.20     # 20% for price
+        case_height = height * 0.20      # 20% for case quantity
         
         # Available text areas (minus padding and spacing)
         text_width = width - (2 * padding)
