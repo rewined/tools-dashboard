@@ -238,7 +238,7 @@
 
 .item-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 100px 40px;
+    grid-template-columns: 1fr 0.8fr 0.8fr 100px 40px;
     gap: 1rem;
     margin-bottom: 1rem;
     align-items: center;

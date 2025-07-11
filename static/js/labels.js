@@ -41,6 +41,7 @@ function addRow() {
             <div class="autocomplete-dropdown" style="display: none;"></div>
         </div>
         <input type="number" placeholder="Price" step="0.01" min="0" class="form-control price-input" data-row="${rowCount}">
+        <input type="number" placeholder="Case Pack" min="1" value="1" class="form-control case-input" data-row="${rowCount}">
         <input type="number" placeholder="QTY" min="1" value="1" class="form-control qty-input" data-row="${rowCount}">
         <button onclick="removeRow(${rowCount})" class="btn-remove">×</button>
     `;
@@ -81,10 +82,11 @@ function collectItems() {
     rows.forEach(row => {
         const sku = row.querySelector('.sku-input').value.trim();
         const price = parseFloat(row.querySelector('.price-input').value);
+        const casePack = parseInt(row.querySelector('.case-input').value) || 1;
         const quantity = parseInt(row.querySelector('.qty-input').value);
         
         if (sku && !isNaN(price) && !isNaN(quantity) && quantity > 0) {
-            // Find the product to get case quantity
+            // Find the product to get description
             const product = productsData.find(p => 
                 p.sku.toLowerCase() === sku.toLowerCase() || 
                 p.description.toLowerCase().includes(sku.toLowerCase())
@@ -94,7 +96,7 @@ function collectItems() {
                 sku: sku,
                 price: price,
                 quantity: quantity,
-                case_qty: product ? product.case_qty : 1,
+                case_qty: casePack,
                 description: product ? product.description : ''
             });
         }
@@ -164,6 +166,7 @@ function resetForm() {
     const firstRow = grid.querySelector('.item-row');
     firstRow.querySelector('.sku-input').value = '';
     firstRow.querySelector('.price-input').value = '';
+    firstRow.querySelector('.case-input').value = '1';
     firstRow.querySelector('.qty-input').value = '1';
     
     // Hide result section and show main sections
@@ -225,9 +228,10 @@ function setupAutocomplete(input) {
             input.value = sku;
             const row = input.closest('.item-row');
             row.querySelector('.price-input').value = price;
+            row.querySelector('.case-input').value = caseQty;
             
             dropdown.style.display = 'none';
-            row.querySelector('.qty-input').focus();
+            row.querySelector('.case-input').focus();
         }
     });
     
@@ -354,6 +358,7 @@ function populateFromCSV(data) {
                 <div class="autocomplete-dropdown" style="display: none;"></div>
             </div>
             <input type="number" placeholder="Price" step="0.01" min="0" class="form-control price-input" data-row="${rowCount}" value="${item.price || ''}">
+            <input type="number" placeholder="Case Pack" min="1" value="${item.case_qty || 1}" class="form-control case-input" data-row="${rowCount}">
             <input type="number" placeholder="QTY" min="1" value="${item.quantity || 1}" class="form-control qty-input" data-row="${rowCount}">
             <button onclick="removeRow(${rowCount})" class="btn-remove">×</button>
         `;
