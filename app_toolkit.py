@@ -147,6 +147,17 @@ def debug_files():
     
     return jsonify(debug_info)
 
+@app.route('/version')
+def version():
+    """Version info endpoint"""
+    return jsonify({
+        'version': '1.0.2',
+        'formats_count': len(LABEL_FORMATS),
+        'has_ol1000wx': 'ol1000wx' in LABEL_FORMATS,
+        'format_names': list(LABEL_FORMATS.keys()),
+        'ol1000wx_details': LABEL_FORMATS.get('ol1000wx').name if 'ol1000wx' in LABEL_FORMATS else None
+    })
+
 # ==========================================
 # LABEL PRINTER ROUTES
 # ==========================================
