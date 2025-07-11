@@ -85,6 +85,16 @@ def get_products_from_database():
 # MAIN DASHBOARD ROUTES
 # ==========================================
 
+@app.route('/test-ol1000wx')
+def test_ol1000wx():
+    """Direct test endpoint for OL1000WX"""
+    return jsonify({
+        'ol1000wx_exists': 'ol1000wx' in LABEL_FORMATS,
+        'all_formats': list(LABEL_FORMATS.keys()),
+        'total_formats': len(LABEL_FORMATS),
+        'deployment_time': datetime.now().isoformat()
+    })
+
 @app.route('/')
 def dashboard():
     """Main dashboard showing all available tools"""
@@ -156,12 +166,20 @@ def debug_files():
 @app.route('/version')
 def version():
     """Version info endpoint"""
+    import subprocess
+    try:
+        git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()[:8]
+    except:
+        git_hash = 'unknown'
+    
     return jsonify({
-        'version': '1.0.2',
+        'version': '1.0.3',
+        'git_commit': git_hash,
         'formats_count': len(LABEL_FORMATS),
         'has_ol1000wx': 'ol1000wx' in LABEL_FORMATS,
         'format_names': list(LABEL_FORMATS.keys()),
-        'ol1000wx_details': LABEL_FORMATS.get('ol1000wx').name if 'ol1000wx' in LABEL_FORMATS else None
+        'ol1000wx_details': LABEL_FORMATS.get('ol1000wx').name if 'ol1000wx' in LABEL_FORMATS else None,
+        'deploy_timestamp': os.environ.get('FORCE_DEPLOY', 'not set')
     })
 
 # ==========================================
