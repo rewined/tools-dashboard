@@ -95,6 +95,6 @@ LABEL_FORMATS = {
         margin_right=0.25,
         margin_bottom=0.5,
         horizontal_spacing=0.125,
-        vertical_spacing=0
+        vertical_spacing=0.1  # Increased by 0.1" for better spacing
     )  # Added for OnlineLabels compatibility
 }
