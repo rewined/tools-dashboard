@@ -26,9 +26,15 @@ SUPABASE_KEY = os.environ.get('SUPABASE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXV
 supabase_client = None
 try:
     from supabase import create_client, Client
-    supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    if SUPABASE_URL and SUPABASE_KEY and SUPABASE_URL != "https://ounsopanyjrjqmhbmxej.supabase.co":
+        supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    else:
+        print("Supabase credentials not configured - using CSV/sample data")
 except ImportError:
     print("Supabase client not available - falling back to CSV/sample data")
+except Exception as e:
+    print(f"Error initializing Supabase client: {e}")
+    supabase_client = None
 
 # Ensure upload and output directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
