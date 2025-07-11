@@ -312,6 +312,12 @@ def labels_download(filename):
     except Exception as e:
         return jsonify({'error': 'File not found'}), 404
 
+@app.route('/labels/debug-formats')
+def debug_formats():
+    """Debug endpoint to check available label formats"""
+    formats_list = {key: format.name for key, format in LABEL_FORMATS.items()}
+    return jsonify(formats_list)
+
 # ==========================================
 # COMING SOON ROUTES
 # ==========================================
