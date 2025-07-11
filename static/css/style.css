@@ -482,9 +482,10 @@ body {
     font-weight: 600;
     color: #374151;
     font-size: 0.875rem;
-    padding: 0 0.75rem;
+    padding-left: 0.75rem;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
 }
 
 .items-grid {
