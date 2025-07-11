@@ -1,0 +1,6 @@
+Version: 1.0.3
+Deployment Date: 2025-07-11
+Features:
+- OnlineLabels OL1000WX (1.5" x 1") format support
+- Case pack field for bulk labeling
+- Debug endpoints for troubleshooting
