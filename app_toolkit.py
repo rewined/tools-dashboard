@@ -343,7 +343,7 @@ def labels_download(filename):
     """Download generated labels"""
     try:
         filepath = os.path.join(app.config['OUTPUT_FOLDER'], filename)
-        return send_file(filepath, as_attachment=True, download_name=filename)
+        return send_file(filepath, as_attachment=False, mimetype='application/pdf')
     except Exception as e:
         return jsonify({'error': 'File not found'}), 404
 
