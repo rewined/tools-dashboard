@@ -90,11 +90,11 @@ LABEL_FORMATS = {
         height=1.0,
         columns=5,
         rows=10,
-        margin_top=0.4,  # Adjusted based on user testing
+        margin_top=0.5,  # Reset to 0.5" for different printer
         margin_left=0.25,
         margin_right=0.25,
         margin_bottom=0.5,
         horizontal_spacing=0.125,
-        vertical_spacing=0.1  # Increased by 0.1" for better spacing
+        vertical_spacing=0.05  # Reduced to half (0.05") for tighter spacing
     )  # Added for OnlineLabels compatibility
 }
