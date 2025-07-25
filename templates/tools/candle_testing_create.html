@@ -193,22 +193,34 @@
     background: #cbd5e0;
 }
 
-/* Select2 Custom Styling */
+/* Selectize Custom Styling */
 .select2-container--default .select2-selection--single {
     height: 40px;
     line-height: 40px;
     border: 1px solid #e2e8f0;
     border-radius: 4px;
+    background: #fff;
 }
 
 .select2-container--default .select2-selection--single .select2-selection__rendered {
     padding-left: 12px;
-    padding-right: 20px;
+    padding-right: 40px;
     color: #2d3748;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #a0aec0;
 }
 
 .select2-container--default .select2-selection--single .select2-selection__arrow {
     height: 38px;
+    right: 10px;
+}
+
+/* When focused, show it's an input field */
+.select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .select2-dropdown {
@@ -253,6 +265,44 @@
     position: relative;
     margin-bottom: 1.5rem;
 }
+
+/* Selectize.js Custom Styling */
+.selectize-control.single .selectize-input {
+    height: 40px;
+    line-height: 38px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 0 12px;
+    font-size: 14px;
+    background: #fff;
+}
+
+.selectize-control.single .selectize-input:after {
+    border-color: #4a5568 transparent transparent transparent;
+    right: 12px;
+}
+
+.selectize-control.single .selectize-input.focus {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.selectize-dropdown {
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 2px;
+}
+
+.selectize-dropdown .option {
+    padding: 8px 12px;
+    color: #2d3748;
+}
+
+.selectize-dropdown .option.active {
+    background-color: #7c3aed;
+    color: white;
+}
 </style>
 
 <script>
@@ -268,58 +318,57 @@ function loadProducts() {
     fetch('/candle-testing/products')
         .then(response => response.json())
         .then(data => {
-            // Populate vessels
-            const vesselSelect = document.getElementById('vessel');
-            vesselSelect.innerHTML = '<option value="">Select a vessel...</option>';
-            data.vessels.forEach(vessel => {
-                const option = new Option(vessel.name, vessel.name);
-                vesselSelect.add(option);
+            // Clear existing options for Selectize
+            document.getElementById('vessel').innerHTML = '';
+            document.getElementById('wax').innerHTML = '';
+            document.getElementById('fragrance').innerHTML = '';
+            document.querySelectorAll('.wick-select').forEach(select => {
+                select.innerHTML = '';
             });
             
-            // Populate waxes
-            const waxSelect = document.getElementById('wax');
-            waxSelect.innerHTML = '<option value="">Select a wax...</option>';
-            data.waxes.forEach(wax => {
-                const option = new Option(wax.name, wax.name);
-                waxSelect.add(option);
+            // Initialize Selectize for direct typing autocomplete
+            $('#vessel').selectize({
+                placeholder: 'Type to search vessels...',
+                valueField: 'name',
+                labelField: 'name',
+                searchField: 'name',
+                create: false,
+                options: data.vessels,
+                render: {
+                    option: function(item, escape) {
+                        return '<div>' + escape(item.name) + '</div>';
+                    }
+                }
             });
             
-            // Populate fragrances
-            const fragranceSelect = document.getElementById('fragrance');
-            fragranceSelect.innerHTML = '<option value="">Select a fragrance...</option>';
-            data.fragrances.forEach(fragrance => {
-                const option = new Option(fragrance.name, fragrance.name);
-                fragranceSelect.add(option);
+            $('#wax').selectize({
+                placeholder: 'Type to search waxes...',
+                valueField: 'name',
+                labelField: 'name',
+                searchField: 'name',
+                create: false,
+                options: data.waxes
             });
             
-            // Populate all wick selects
-            const wickSelects = document.querySelectorAll('.wick-select');
-            wickSelects.forEach((select, index) => {
-                select.innerHTML = `<option value="">Select wick ${index + 1}...</option>`;
-                data.wicks.forEach(wick => {
-                    const option = new Option(wick.name, wick.name);
-                    select.add(option);
+            $('#fragrance').selectize({
+                placeholder: 'Type to search fragrances...',
+                valueField: 'name',
+                labelField: 'name',
+                searchField: 'name',
+                create: false,
+                options: data.fragrances
+            });
+            
+            // Initialize all wick selects
+            $('.wick-select').each(function(index) {
+                $(this).selectize({
+                    placeholder: `Type to search wick ${index + 1}...`,
+                    valueField: 'name',
+                    labelField: 'name',
+                    searchField: 'name',
+                    create: false,
+                    options: data.wicks
                 });
-            });
-            
-            // Initialize Select2 on all dropdowns for searchable autocomplete
-            // Using minimumResultsForSearch: 0 to always show search box
-            $('#vessel, #wax, #fragrance').select2({
-                placeholder: 'Type to search...',
-                allowClear: true,
-                width: '100%',
-                minimumResultsForSearch: 0,
-                dropdownAutoWidth: true,
-                dropdownCssClass: 'candle-select-dropdown'
-            });
-            
-            $('.wick-select').select2({
-                placeholder: 'Type to search wicks...',
-                allowClear: true,
-                width: '100%',
-                minimumResultsForSearch: 0,
-                dropdownAutoWidth: true,
-                dropdownCssClass: 'candle-select-dropdown'
             });
         })
         .catch(error => {
