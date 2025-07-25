@@ -20,40 +20,25 @@ class PDFGeneratorCandle:
     
     def generate_test_labels(self, test_data: Dict[str, Any], trials: List[Dict[str, Any]], 
                             label_format: LabelFormat, output_filename: str, base_url: str) -> str:
-        """Generate candle test labels with QR codes."""
+        """Generate candle test labels with QR codes - one label per page for thermal printer."""
         output_path = os.path.join(self.output_dir, output_filename)
-        c = canvas.Canvas(output_path, pagesize=letter)
         
-        # Page dimensions
-        page_width, page_height = letter
+        # For thermal printer: use custom page size matching label size
+        # Standard 1x4" label for thermal printer
+        label_width = label_format.width * inch
+        label_height = label_format.height * inch
         
-        # Generate labels
-        label_index = 0
-        total_labels = len(trials)
+        # Create canvas with label size as page size
+        c = canvas.Canvas(output_path, pagesize=(label_width, label_height))
         
-        while label_index < total_labels:
-            # Draw labels for current page
-            for row in range(label_format.rows):
-                for col in range(label_format.columns):
-                    if label_index >= total_labels:
-                        break
-                    
-                    # Calculate position
-                    x = label_format.margin_left * inch + \
-                        col * (label_format.width * inch + label_format.horizontal_spacing * inch)
-                    y = page_height - label_format.margin_top * inch - \
-                        (row + 1) * label_format.height * inch - \
-                        row * label_format.vertical_spacing * inch
-                    
-                    # Draw label
-                    trial = trials[label_index]
-                    self._draw_candle_test_label(c, x, y, label_format.width * inch, 
-                                               label_format.height * inch, test_data, trial, base_url)
-                    
-                    label_index += 1
+        # Generate one label per page
+        for index, trial in enumerate(trials):
+            # Draw label at origin (0, 0) since page size matches label size
+            self._draw_candle_test_label(c, 0, 0, label_width, label_height, 
+                                       test_data, trial, base_url)
             
-            # Start new page if more labels remain
-            if label_index < total_labels:
+            # Create new page for next label (except for the last one)
+            if index < len(trials) - 1:
                 c.showPage()
         
         c.save()
@@ -95,9 +80,9 @@ class PDFGeneratorCandle:
                                trial: Dict[str, Any], base_url: str):
         """Draw a candle test label with QR code."""
         
-        # Layout for 1x4" label
-        padding = 0.05 * inch
-        qr_size = height * 0.8  # QR code takes 80% of height
+        # Layout for 1x4" label on thermal printer
+        padding = 0.1 * inch  # More padding for thermal printer
+        qr_size = height * 0.75  # QR code takes 75% of height
         
         # Generate QR code URL
         qr_url = f"{base_url}/candle-testing/evaluate/{test_data['id']}/{trial['id']}"
@@ -118,15 +103,15 @@ class PDFGeneratorCandle:
         # Draw test ID and trial number at top
         canvas_obj.setFont("Helvetica-Bold", 10)
         id_text = f"{test_data['id']}"
-        canvas_obj.drawString(text_x, y + height - padding - 10, id_text)
+        canvas_obj.drawString(text_x, y + height - padding - 12, id_text)
         
         canvas_obj.setFont("Helvetica-Bold", 8)
         trial_text = f"Trial {trial['trial_number']}"
-        canvas_obj.drawString(text_x, y + height - padding - 20, trial_text)
+        canvas_obj.drawString(text_x, y + height - padding - 24, trial_text)
         
         # Draw components info
         canvas_obj.setFont("Helvetica", 6)
-        component_y = y + height - padding - 32
+        component_y = y + height - padding - 36
         
         # Vessel
         vessel_text = test_data['vessel'].split(' - ')[0]  # Just the code
@@ -134,16 +119,16 @@ class PDFGeneratorCandle:
         
         # Wax
         wax_text = test_data['wax'].split(' - ')[0]  # Just the code
-        canvas_obj.drawString(text_x, component_y - 8, f"W: {wax_text}")
+        canvas_obj.drawString(text_x, component_y - 9, f"W: {wax_text}")
         
         # Fragrance and blend
         fragrance_text = test_data['fragrance'].split(' - ')[0]  # Just the code
-        canvas_obj.drawString(text_x, component_y - 16, f"F: {fragrance_text} @ {test_data['blend_percentage']}%")
+        canvas_obj.drawString(text_x, component_y - 18, f"F: {fragrance_text} @ {test_data['blend_percentage']}%")
         
         # Wick (larger font for emphasis)
-        canvas_obj.setFont("Helvetica-Bold", 8)
-        wick_text = trial['wick'].replace('Wick.', '')  # Remove prefix
-        canvas_obj.drawString(text_x, component_y - 28, f"Wick: {wick_text}")
+        canvas_obj.setFont("Helvetica-Bold", 9)
+        wick_text = trial['wick'].replace('Wick.', '').replace('WICK-', '')  # Remove prefixes
+        canvas_obj.drawString(text_x, component_y - 30, f"Wick: {wick_text}")
         
         # Optional: Draw border for debugging
         # canvas_obj.rect(x, y, width, height)
