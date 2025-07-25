@@ -235,26 +235,26 @@ class NetSuiteClient:
             # Use SuiteQL to search for different product types with "starts with" patterns
             queries = {
                 'vessels': [
-                    # Items starting with VES only
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'ves%' AND ROWNUM <= 300",
+                    # Items starting with VES only - increased limit to get all items
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'ves%' ORDER BY itemid",
                 ],
                 'waxes': [
                     # Items starting with WAX
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'wax%' AND ROWNUM <= 200",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'wax%' ORDER BY itemid",
                 ],
                 'fragrances': [
                     # Items starting with OIL, FO, or FRAG
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'oil%' AND ROWNUM <= 200",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'fo-%' AND ROWNUM <= 200",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'frag%' AND ROWNUM <= 100",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'oil%' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'fo-%' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'frag%' ORDER BY itemid",
                 ],
                 'wicks': [
                     # Items starting with WICK or specific wick types
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'wick%' AND ROWNUM <= 200",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'cd-%' AND ROWNUM <= 100",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'eco-%' AND ROWNUM <= 100",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'lx-%' AND ROWNUM <= 100",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'htp-%' AND ROWNUM <= 100",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'wick%' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'cd-%' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'eco-%' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'lx-%' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'htp-%' ORDER BY itemid",
                 ]
             }
             
