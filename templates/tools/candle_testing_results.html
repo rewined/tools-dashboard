@@ -1,0 +1,349 @@
+{% extends "toolkit_base.html" %}
+
+{% block title %}Test Results - {{ test.id }}{% endblock %}
+{% block nav_title %}Candle Test Results{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <div class="test-header">
+        <h2>Test Results: {{ test.id }}</h2>
+        <div class="test-meta">
+            <div class="meta-item">
+                <span class="label">Created:</span>
+                <span class="value">{{ test.created_at[:10] }} by {{ test.created_by }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="label">Components:</span>
+                <span class="value">{{ test.vessel }} | {{ test.wax }} | {{ test.fragrance }} @ {{ test.blend_percentage }}%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-grid">
+        {% for result in results %}
+        <div class="trial-card">
+            <div class="trial-header">
+                <h3>Trial {{ result.trial.trial_number }}</h3>
+                <span class="wick-name">{{ result.trial.wick }}</span>
+            </div>
+
+            <div class="evaluation-data">
+                <!-- 1 Hour Data -->
+                <div class="time-section">
+                    <h4>1 Hour</h4>
+                    {% if '1hr' in result.evaluations %}
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="label">Full Melt Pool:</span>
+                                <span class="value {% if result.evaluations['1hr'].full_melt_pool %}success{% else %}warning{% endif %}">
+                                    {{ 'Yes' if result.evaluations['1hr'].full_melt_pool else 'No' }}
+                                </span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">Melt Pool Depth:</span>
+                                <span class="value">{{ result.evaluations['1hr'].melt_pool_depth }}"</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">External Temp:</span>
+                                <span class="value">{{ result.evaluations['1hr'].external_temp }}°F</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">Flame Height:</span>
+                                <span class="value">{{ result.evaluations['1hr'].flame_height }}"</span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="no-data">No data recorded</p>
+                    {% endif %}
+                </div>
+
+                <!-- 2 Hour Data -->
+                <div class="time-section">
+                    <h4>2 Hour</h4>
+                    {% if '2hr' in result.evaluations %}
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="label">Full Melt Pool:</span>
+                                <span class="value {% if result.evaluations['2hr'].full_melt_pool %}success{% else %}warning{% endif %}">
+                                    {{ 'Yes' if result.evaluations['2hr'].full_melt_pool else 'No' }}
+                                </span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">Melt Pool Depth:</span>
+                                <span class="value">{{ result.evaluations['2hr'].melt_pool_depth }}"</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">External Temp:</span>
+                                <span class="value">{{ result.evaluations['2hr'].external_temp }}°F</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">Flame Height:</span>
+                                <span class="value">{{ result.evaluations['2hr'].flame_height }}"</span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="no-data">No data recorded</p>
+                    {% endif %}
+                </div>
+
+                <!-- 4 Hour Data -->
+                <div class="time-section">
+                    <h4>4 Hour</h4>
+                    {% if '4hr' in result.evaluations %}
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="label">Full Melt Pool:</span>
+                                <span class="value {% if result.evaluations['4hr'].full_melt_pool %}success{% else %}warning{% endif %}">
+                                    {{ 'Yes' if result.evaluations['4hr'].full_melt_pool else 'No' }}
+                                </span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">Melt Pool Depth:</span>
+                                <span class="value">{{ result.evaluations['4hr'].melt_pool_depth }}"</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">External Temp:</span>
+                                <span class="value">{{ result.evaluations['4hr'].external_temp }}°F</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="label">Flame Height:</span>
+                                <span class="value">{{ result.evaluations['4hr'].flame_height }}"</span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="no-data">No data recorded</p>
+                    {% endif %}
+                </div>
+
+                <!-- Post-Extinguish Data -->
+                {% if 'post_extinguish' in result.evaluations %}
+                <div class="time-section extinguish-section">
+                    <h4>Post-Extinguish</h4>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <span class="label">After Glow:</span>
+                            <span class="value">{{ result.evaluations['post_extinguish'].after_glow }} sec</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="label">After Smoke:</span>
+                            <span class="value">{{ result.evaluations['post_extinguish'].after_smoke }} sec</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="trial-actions">
+                <a href="{{ url_for('candle_testing_evaluate', test_id=test.id, trial_id=result.trial.id) }}" 
+                   class="btn btn-sm btn-primary">Add/Edit Data</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="summary-section">
+        <h3>Test Summary</h3>
+        <div class="summary-content">
+            <p>This test evaluated {{ results|length }} different wick options for the specified candle configuration.</p>
+            <!-- Additional summary statistics can be added here -->
+        </div>
+    </div>
+
+    <div class="actions-section">
+        <a href="{{ url_for('candle_testing_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+        <button onclick="window.print()" class="btn btn-secondary">Print Results</button>
+    </div>
+</div>
+
+<style>
+.results-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.test-header {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.test-header h2 {
+    margin-bottom: 1rem;
+    color: #2d3748;
+}
+
+.test-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.meta-item {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.meta-item .label {
+    font-weight: 600;
+    color: #718096;
+}
+
+.meta-item .value {
+    color: #4a5568;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.trial-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.trial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.trial-header h3 {
+    margin: 0;
+    color: #2d3748;
+}
+
+.wick-name {
+    background: #e2e8f0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.evaluation-data {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.time-section {
+    padding: 1rem;
+    background: #f7fafc;
+    border-radius: 6px;
+}
+
+.time-section h4 {
+    margin-bottom: 0.75rem;
+    color: #4a5568;
+    font-size: 1rem;
+}
+
+.data-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.data-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.data-item .label {
+    font-size: 0.75rem;
+    color: #718096;
+    font-weight: 600;
+}
+
+.data-item .value {
+    font-size: 1rem;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.value.success {
+    color: #065f46;
+}
+
+.value.warning {
+    color: #92400e;
+}
+
+.no-data {
+    color: #a0aec0;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+}
+
+.extinguish-section {
+    background: #fef3c7;
+}
+
+.trial-actions {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.summary-section {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.summary-section h3 {
+    margin-bottom: 1rem;
+    color: #2d3748;
+}
+
+.summary-content {
+    color: #4a5568;
+}
+
+.actions-section {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+@media print {
+    .actions-section,
+    .trial-actions {
+        display: none;
+    }
+    
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .trial-card {
+        break-inside: avoid;
+    }
+}
+
+@media (max-width: 768px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .data-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

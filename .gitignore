@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Test files
+test_*.py
+diagnose_*.py
+debug_*.py
+analyze_*.py
+check_*.py
+identify_*.py
+explore_*.py
+*_test.py
+
+# Output files
+*.json
+!package.json
+!railway.json
+*.csv
+static/output/
+static/uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+~*

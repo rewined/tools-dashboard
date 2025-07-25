@@ -1,0 +1,310 @@
+{% extends "toolkit_base.html" %}
+
+{% block title %}Create Candle Test - Team Toolkit{% endblock %}
+{% block nav_title %}Create Candle Test{% endblock %}
+
+{% block content %}
+<div class="candle-test-create">
+    <div class="form-container">
+        <h2>Create New Candle Test</h2>
+        <p class="subtitle">Set up a new candle burn performance test with 6 wick variations</p>
+
+        <form id="createTestForm">
+            <div class="form-section">
+                <h3>Test Components</h3>
+                
+                <div class="form-group">
+                    <label for="vessel">Vessel</label>
+                    <select id="vessel" name="vessel" class="form-control" required>
+                        <option value="">Select a vessel...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="wax">Wax</label>
+                    <select id="wax" name="wax" class="form-control" required>
+                        <option value="">Select a wax...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="fragrance">Fragrance Oil</label>
+                    <select id="fragrance" name="fragrance" class="form-control" required>
+                        <option value="">Select a fragrance...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="blend_percentage">Blend Percentage (%)</label>
+                    <input type="number" id="blend_percentage" name="blend_percentage" 
+                           class="form-control" min="0" max="20" step="0.1" required
+                           placeholder="e.g., 8.5">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Wick Selection (6 Trials)</h3>
+                <p class="help-text">Select 6 different wicks for testing</p>
+                
+                <div class="wicks-grid">
+                    {% for i in range(1, 7) %}
+                    <div class="form-group">
+                        <label for="wick_{{ i }}">Trial {{ i }} Wick</label>
+                        <select id="wick_{{ i }}" name="wick_{{ i }}" class="form-control wick-select" required>
+                            <option value="">Select wick {{ i }}...</option>
+                        </select>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Test Information</h3>
+                
+                <div class="form-group">
+                    <label for="created_by">Created By</label>
+                    <input type="text" id="created_by" name="created_by" 
+                           class="form-control" required placeholder="Your name">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Create Test & Generate Labels</button>
+                <a href="{{ url_for('candle_testing_dashboard') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.candle-test-create {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 2rem;
+}
+
+.form-container h2 {
+    margin-bottom: 0.5rem;
+    color: #2d3748;
+}
+
+.subtitle {
+    color: #718096;
+    margin-bottom: 2rem;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.form-section:last-of-type {
+    border-bottom: none;
+}
+
+.form-section h3 {
+    color: #4a5568;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #4a5568;
+    font-weight: 600;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.wicks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.help-text {
+    color: #718096;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.btn-secondary:hover {
+    background: #cbd5e0;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load product data
+    loadProducts();
+    
+    // Handle form submission
+    document.getElementById('createTestForm').addEventListener('submit', handleSubmit);
+});
+
+function loadProducts() {
+    fetch('/candle-testing/products')
+        .then(response => response.json())
+        .then(data => {
+            // Populate vessels
+            const vesselSelect = document.getElementById('vessel');
+            data.vessels.forEach(vessel => {
+                const option = new Option(vessel.name, vessel.name);
+                vesselSelect.add(option);
+            });
+            
+            // Populate waxes
+            const waxSelect = document.getElementById('wax');
+            data.waxes.forEach(wax => {
+                const option = new Option(wax.name, wax.name);
+                waxSelect.add(option);
+            });
+            
+            // Populate fragrances
+            const fragranceSelect = document.getElementById('fragrance');
+            data.fragrances.forEach(fragrance => {
+                const option = new Option(fragrance.name, fragrance.name);
+                fragranceSelect.add(option);
+            });
+            
+            // Populate all wick selects
+            const wickSelects = document.querySelectorAll('.wick-select');
+            wickSelects.forEach(select => {
+                data.wicks.forEach(wick => {
+                    const option = new Option(wick.name, wick.name);
+                    select.add(option);
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Error loading products:', error);
+            alert('Error loading product data. Please refresh the page.');
+        });
+}
+
+function handleSubmit(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const wicks = [];
+    
+    // Collect all selected wicks
+    for (let i = 1; i <= 6; i++) {
+        const wick = formData.get(`wick_${i}`);
+        if (wick) {
+            wicks.push(wick);
+        }
+    }
+    
+    // Validate unique wicks
+    const uniqueWicks = new Set(wicks);
+    if (uniqueWicks.size !== 6) {
+        alert('Please select 6 different wicks for the test.');
+        return;
+    }
+    
+    const testData = {
+        vessel: formData.get('vessel'),
+        wax: formData.get('wax'),
+        fragrance: formData.get('fragrance'),
+        blend_percentage: parseFloat(formData.get('blend_percentage')),
+        wicks: wicks,
+        created_by: formData.get('created_by')
+    };
+    
+    // Submit test
+    fetch('/candle-testing/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(testData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Generate labels
+            return fetch(`/candle-testing/generate-labels/${data.test_id}`, {
+                method: 'POST'
+            });
+        } else {
+            throw new Error(data.error || 'Failed to create test');
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Open labels in new tab and redirect to dashboard
+            window.open(data.download_url, '_blank');
+            window.location.href = '{{ url_for("candle_testing_dashboard") }}';
+        } else {
+            throw new Error(data.error || 'Failed to generate labels');
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
+</script>
+{% endblock %}

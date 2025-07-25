@@ -96,5 +96,18 @@ LABEL_FORMATS = {
         margin_bottom=0.5,
         horizontal_spacing=0.125,
         vertical_spacing=0.05  # Reduced to half (0.05") for tighter spacing
-    )  # Added for OnlineLabels compatibility
+    ),  # Added for OnlineLabels compatibility
+    "candle_test_1x4": LabelFormat(
+        name="Candle Test Labels (1\" x 4\")",
+        width=4.0,
+        height=1.0,
+        columns=2,
+        rows=10,
+        margin_top=0.5,
+        margin_left=0.25,
+        margin_right=0.25,
+        margin_bottom=0.5,
+        horizontal_spacing=0.125,
+        vertical_spacing=0.0625
+    )
 }
