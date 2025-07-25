@@ -252,15 +252,22 @@ function handleSubmit(event) {
     // Collect all selected wicks
     for (let i = 1; i <= 6; i++) {
         const wick = formData.get(`wick_${i}`);
-        if (wick) {
+        if (wick && wick !== "") {
             wicks.push(wick);
+        } else {
+            console.log(`Wick ${i} is empty or null:`, wick);
         }
     }
     
     // Validate unique wicks
     const uniqueWicks = new Set(wicks);
+    if (wicks.length !== 6) {
+        alert(`Please select all 6 wicks. You have selected ${wicks.length} wicks.`);
+        return;
+    }
     if (uniqueWicks.size !== 6) {
-        alert('Please select 6 different wicks for the test.');
+        alert(`Please select 6 DIFFERENT wicks. You selected ${wicks.length} wicks but only ${uniqueWicks.size} are unique. Duplicates found.`);
+        console.log('Selected wicks:', wicks);
         return;
     }
     
