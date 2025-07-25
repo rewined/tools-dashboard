@@ -1,11 +1,14 @@
 This file is created to trigger Railway auto-deployment.
-Timestamp: 2025-07-06 14:10:00
+Timestamp: 2025-07-25 12:58:00
 
 Recent changes that need to be deployed:
-- Added fallback sample products for autocomplete
-- Fixed gray X button styling  
-- Added debug endpoint
-- Enhanced search functionality (SKU + description)
-- Case quantity support in PDF labels
+- Added COMPLETE Candle Testing System
+- NetSuite OAuth 1.0a integration (977+ items)
+- QR code label generation for wick trials
+- Mobile evaluation forms for burn testing
+- Database models for tracking test results
+- Fixed NetSuite authentication issues
 
-The autocomplete should work once this deploys.Deployment trigger: Wed Jul  9 15:04:17 EDT 2025
+CRITICAL: Add NetSuite environment variables in Railway before accessing /candle-testing
+
+Deployment trigger: Fri Jul 25 12:58:00 EDT 2025
