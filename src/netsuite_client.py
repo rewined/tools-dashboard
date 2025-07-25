@@ -235,9 +235,8 @@ class NetSuiteClient:
             # Use SuiteQL to search for different product types with "starts with" patterns
             queries = {
                 'vessels': [
-                    # Items starting with VES or JAR
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'ves%' AND ROWNUM <= 200",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'jar%' AND ROWNUM <= 100",
+                    # Items starting with VES only
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'ves%' AND ROWNUM <= 300",
                 ],
                 'waxes': [
                     # Items starting with WAX
