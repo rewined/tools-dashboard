@@ -432,6 +432,22 @@ else:
     print("  NETSUITE_ACCOUNT_ID, NETSUITE_CONSUMER_KEY, NETSUITE_CONSUMER_SECRET")
     print("  NETSUITE_TOKEN_ID, NETSUITE_TOKEN_SECRET")
 
+@app.route('/version')
+def version():
+    """Check deployment version"""
+    return jsonify({
+        'version': '1.1.0',
+        'features': {
+            'candle_testing': True,
+            'thermal_printer_labels': True,
+            'one_label_per_page': True,
+            'netsuite_integration': True
+        },
+        'label_format': 'Each label on separate 1x4 inch page',
+        'last_update': '2025-07-25 - Thermal printer support',
+        'pdf_page_size': '1x4 inches per page'
+    })
+
 @app.route('/candle-testing')
 def candle_testing_dashboard():
     """Main dashboard for candle testing tool"""
