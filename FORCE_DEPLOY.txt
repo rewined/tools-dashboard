@@ -1,0 +1,26 @@
+FORCE RAILWAY DEPLOYMENT
+========================
+
+Timestamp: 2025-07-25 13:16:00 EST
+Commit: b7d4e5253ad2437820cf36da0ffa1ac76b105b88
+
+CRITICAL UPDATES PENDING:
+1. Candle Testing System - COMPLETE
+2. NetSuite Integration - WORKING (977+ items)
+3. Thermal Printer Labels - FIXED
+4. Wick Validation - IMPROVED
+
+If auto-deploy is not working:
+1. Check Railway dashboard for any errors
+2. Verify GitHub integration is connected
+3. Manual deploy: Railway dashboard > Deploy > Deploy from GitHub
+4. Or use: railway up
+
+Environment variables required:
+- NETSUITE_ACCOUNT_ID
+- NETSUITE_CONSUMER_KEY  
+- NETSUITE_CONSUMER_SECRET
+- NETSUITE_TOKEN_ID
+- NETSUITE_TOKEN_SECRET
+
+All set in Railway already!
