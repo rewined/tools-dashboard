@@ -5,11 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Team Toolkit{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/toolkit.css') }}">
-    <!-- jQuery for autocomplete -->
+    <!-- jQuery must load first -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Wait for jQuery before loading Selectize -->
+    <script>
+        // Ensure jQuery is loaded before loading Selectize
+        if (typeof jQuery === 'undefined') {
+            console.error('jQuery not loaded!');
+        }
+    </script>
     <!-- Selectize for better autocomplete -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.15.2/css/selectize.default.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.15.2/js/standalone/selectize.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.15.2/js/selectize.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>

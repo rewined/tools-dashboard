@@ -306,7 +306,8 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// Use jQuery's document ready to ensure all libraries are loaded
+$(document).ready(function() {
     // Load product data
     loadProducts();
     
@@ -328,6 +329,11 @@ function loadProducts() {
             
             // Initialize Selectize for direct typing autocomplete
             try {
+                // Check if Selectize is available
+                if (typeof $.fn.selectize === 'undefined') {
+                    throw new Error('Selectize plugin not loaded');
+                }
+                
                 $('#vessel').selectize({
                 placeholder: 'Type to search vessels...',
                 valueField: 'name',
@@ -380,15 +386,37 @@ function loadProducts() {
             console.error('Error loading products:', error);
             console.error('Error details:', error.message, error.stack);
             // Fall back to simple selects if Selectize fails
-            alert('Error initializing search dropdowns. Using standard dropdowns instead.');
+            console.warn('Selectize not available, using standard dropdowns');
             
             // Populate standard dropdowns as fallback
-            const vesselSelect = document.getElementById('vessel');
-            vesselSelect.innerHTML = '<option value="">Select a vessel...</option>';
-            if (window.productData && window.productData.vessels) {
+            if (window.productData) {
+                // Vessels
+                const vesselSelect = document.getElementById('vessel');
+                vesselSelect.innerHTML = '<option value="">Select a vessel...</option>';
                 window.productData.vessels.forEach(vessel => {
-                    const option = new Option(vessel.name, vessel.name);
-                    vesselSelect.add(option);
+                    vesselSelect.add(new Option(vessel.name, vessel.name));
+                });
+                
+                // Waxes
+                const waxSelect = document.getElementById('wax');
+                waxSelect.innerHTML = '<option value="">Select a wax...</option>';
+                window.productData.waxes.forEach(wax => {
+                    waxSelect.add(new Option(wax.name, wax.name));
+                });
+                
+                // Fragrances
+                const fragranceSelect = document.getElementById('fragrance');
+                fragranceSelect.innerHTML = '<option value="">Select a fragrance...</option>';
+                window.productData.fragrances.forEach(fragrance => {
+                    fragranceSelect.add(new Option(fragrance.name, fragrance.name));
+                });
+                
+                // Wicks
+                document.querySelectorAll('.wick-select').forEach((select, index) => {
+                    select.innerHTML = `<option value="">Select wick ${index + 1}...</option>`;
+                    window.productData.wicks.forEach(wick => {
+                        select.add(new Option(wick.name, wick.name));
+                    });
                 });
             }
         });
