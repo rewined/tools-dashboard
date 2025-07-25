@@ -1,9 +1,26 @@
 # Claude Code Configuration & Tools Dashboard Project
 
 ## Project Overview
-This document tracks the Tools Dashboard project - a Flask-based web application with multiple business tools, currently featuring a Label Printer tool for generating barcode price stickers.
+This document tracks the Tools Dashboard project - a Flask-based web application with multiple business tools, currently featuring:
+1. **Label Printer Tool** - Generate barcode price stickers
+2. **Candle Testing Tool** - Track wick performance tests with QR code labels
 
 **Current Status**: ✅ Successfully deployed to Railway with ongoing styling refinements
+
+### NetSuite Integration
+- **Account ID**: 3646798
+- **Credentials**: Stored in `.env` file (OAuth 1.0a tokens)
+- **Status**: ✅ WORKING - Successfully authenticating and pulling live data
+- **Authentication**: OAuth 1.0a with HMAC-SHA256 signature method
+- **API**: Using SuiteQL queries via REST API
+- **Fallback**: System uses sample data when NetSuite is unavailable
+
+#### Key Implementation Details:
+- Uses 11-character alphanumeric nonce (NetSuite requirement)
+- Proper percent encoding with `safe='~'` parameter
+- Realm must be the account ID (not uppercase or with underscores)
+- Requires 'Prefer: transient' header for SuiteQL endpoints
+- Successfully pulling vessels, waxes, fragrances, and wicks from live inventory
 
 ## MCP Servers Configuration
 

@@ -82,7 +82,7 @@ class PDFGeneratorCandle:
         
         # Layout for 1x4" label on thermal printer
         padding = 0.1 * inch  # More padding for thermal printer
-        qr_size = height * 0.75  # QR code takes 75% of height
+        qr_size = height * 0.70  # QR code takes 70% of height to leave more room for text
         
         # Generate QR code URL
         qr_url = f"{base_url}/candle-testing/evaluate/{test_data['id']}/{trial['id']}"
@@ -125,10 +125,12 @@ class PDFGeneratorCandle:
         fragrance_text = test_data['fragrance'].split(' - ')[0]  # Just the code
         canvas_obj.drawString(text_x, component_y - 18, f"F: {fragrance_text} @ {test_data['blend_percentage']}%")
         
-        # Wick (larger font for emphasis)
-        canvas_obj.setFont("Helvetica-Bold", 9)
+        # Wick (larger font for emphasis) - adjust position to avoid clipping
+        canvas_obj.setFont("Helvetica-Bold", 8)
         wick_text = trial['wick'].replace('Wick.', '').replace('WICK-', '')  # Remove prefixes
-        canvas_obj.drawString(text_x, component_y - 30, f"Wick: {wick_text}")
+        # Ensure wick text doesn't go below bottom padding
+        wick_y = max(component_y - 28, y + padding + 5)
+        canvas_obj.drawString(text_x, wick_y, f"Wick: {wick_text}")
         
         # Optional: Draw border for debugging
         # canvas_obj.rect(x, y, width, height)

@@ -16,21 +16,21 @@
                 <div class="form-group">
                     <label for="vessel">Vessel</label>
                     <select id="vessel" name="vessel" class="form-control" required>
-                        <option value="">Select a vessel...</option>
+                        <option value="">Loading vessels...</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="wax">Wax</label>
                     <select id="wax" name="wax" class="form-control" required>
-                        <option value="">Select a wax...</option>
+                        <option value="">Loading waxes...</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="fragrance">Fragrance Oil</label>
                     <select id="fragrance" name="fragrance" class="form-control" required>
-                        <option value="">Select a fragrance...</option>
+                        <option value="">Loading fragrances...</option>
                     </select>
                 </div>
 
@@ -51,7 +51,7 @@
                     <div class="form-group">
                         <label for="wick_{{ i }}">Trial {{ i }} Wick</label>
                         <select id="wick_{{ i }}" name="wick_{{ i }}" class="form-control wick-select" required>
-                            <option value="">Select wick {{ i }}...</option>
+                            <option value="">Loading wicks...</option>
                         </select>
                     </div>
                     {% endfor %}
@@ -209,6 +209,7 @@ function loadProducts() {
         .then(data => {
             // Populate vessels
             const vesselSelect = document.getElementById('vessel');
+            vesselSelect.innerHTML = '<option value="">Select a vessel...</option>';
             data.vessels.forEach(vessel => {
                 const option = new Option(vessel.name, vessel.name);
                 vesselSelect.add(option);
@@ -216,6 +217,7 @@ function loadProducts() {
             
             // Populate waxes
             const waxSelect = document.getElementById('wax');
+            waxSelect.innerHTML = '<option value="">Select a wax...</option>';
             data.waxes.forEach(wax => {
                 const option = new Option(wax.name, wax.name);
                 waxSelect.add(option);
@@ -223,6 +225,7 @@ function loadProducts() {
             
             // Populate fragrances
             const fragranceSelect = document.getElementById('fragrance');
+            fragranceSelect.innerHTML = '<option value="">Select a fragrance...</option>';
             data.fragrances.forEach(fragrance => {
                 const option = new Option(fragrance.name, fragrance.name);
                 fragranceSelect.add(option);
@@ -230,7 +233,8 @@ function loadProducts() {
             
             // Populate all wick selects
             const wickSelects = document.querySelectorAll('.wick-select');
-            wickSelects.forEach(select => {
+            wickSelects.forEach((select, index) => {
+                select.innerHTML = `<option value="">Select wick ${index + 1}...</option>`;
                 data.wicks.forEach(wick => {
                     const option = new Option(wick.name, wick.name);
                     select.add(option);

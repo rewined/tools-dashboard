@@ -180,9 +180,9 @@ class NetSuiteClient:
         
         url = f"{self.base_url}/services/rest/query/v1/suiteql"
         
-        # Build SuiteQL query
+        # Build SuiteQL query - use starts with for better filtering
         if query:
-            suiteql = f"SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE LOWER('%{query}%') AND ROWNUM <= 100"
+            suiteql = f"SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE LOWER('{query}%') AND ROWNUM <= 100"
         else:
             suiteql = "SELECT id, itemid, displayname FROM item WHERE ROWNUM <= 100"
         
