@@ -316,18 +316,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function loadProducts() {
     fetch('/candle-testing/products')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            // Clear existing options for Selectize
-            document.getElementById('vessel').innerHTML = '';
-            document.getElementById('wax').innerHTML = '';
-            document.getElementById('fragrance').innerHTML = '';
-            document.querySelectorAll('.wick-select').forEach(select => {
-                select.innerHTML = '';
-            });
+            // Save product data globally for fallback
+            window.productData = data;
             
             // Initialize Selectize for direct typing autocomplete
-            $('#vessel').selectize({
+            try {
+                $('#vessel').selectize({
                 placeholder: 'Type to search vessels...',
                 valueField: 'name',
                 labelField: 'name',
@@ -370,10 +371,26 @@ function loadProducts() {
                     options: data.wicks
                 });
             });
+            } catch (e) {
+                console.error('Selectize initialization error:', e);
+                throw e;
+            }
         })
         .catch(error => {
             console.error('Error loading products:', error);
-            alert('Error loading product data. Please refresh the page.');
+            console.error('Error details:', error.message, error.stack);
+            // Fall back to simple selects if Selectize fails
+            alert('Error initializing search dropdowns. Using standard dropdowns instead.');
+            
+            // Populate standard dropdowns as fallback
+            const vesselSelect = document.getElementById('vessel');
+            vesselSelect.innerHTML = '<option value="">Select a vessel...</option>';
+            if (window.productData && window.productData.vessels) {
+                window.productData.vessels.forEach(vessel => {
+                    const option = new Option(vessel.name, vessel.name);
+                    vesselSelect.add(option);
+                });
+            }
         });
 }
 
