@@ -180,11 +180,11 @@ class NetSuiteClient:
         
         url = f"{self.base_url}/services/rest/query/v1/suiteql"
         
-        # Build SuiteQL query - use starts with for better filtering
+        # Build SuiteQL query - use starts with for better filtering and exclude inactive
         if query:
-            suiteql = f"SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE LOWER('{query}%') AND ROWNUM <= 100"
+            suiteql = f"SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE LOWER('{query}%') AND isinactive = 'F' ORDER BY itemid"
         else:
-            suiteql = "SELECT id, itemid, displayname FROM item WHERE ROWNUM <= 100"
+            suiteql = "SELECT id, itemid, displayname FROM item WHERE isinactive = 'F' ORDER BY itemid FETCH FIRST 100 ROWS ONLY"
         
         body = {"q": suiteql}
         
@@ -235,26 +235,26 @@ class NetSuiteClient:
             # Use SuiteQL to search for different product types with "starts with" patterns
             queries = {
                 'vessels': [
-                    # Items starting with VES only - increased limit to get all items
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'ves%' ORDER BY itemid",
+                    # Items starting with VES only - exclude inactive items
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'ves%' AND isinactive = 'F' ORDER BY itemid",
                 ],
                 'waxes': [
-                    # Items starting with WAX
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'wax%' ORDER BY itemid",
+                    # Items starting with WAX - exclude inactive items
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'wax%' AND isinactive = 'F' ORDER BY itemid",
                 ],
                 'fragrances': [
-                    # Items starting with OIL, FO, or FRAG
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'oil%' ORDER BY itemid",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'fo-%' ORDER BY itemid",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'frag%' ORDER BY itemid",
+                    # Items starting with OIL, FO, or FRAG - exclude inactive items
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'oil%' AND isinactive = 'F' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'fo-%' AND isinactive = 'F' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'frag%' AND isinactive = 'F' ORDER BY itemid",
                 ],
                 'wicks': [
-                    # Items starting with WICK or specific wick types
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'wick%' ORDER BY itemid",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'cd-%' ORDER BY itemid",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'eco-%' ORDER BY itemid",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'lx-%' ORDER BY itemid",
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'htp-%' ORDER BY itemid",
+                    # Items starting with WICK or specific wick types - exclude inactive items
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'wick%' AND isinactive = 'F' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'cd-%' AND isinactive = 'F' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'eco-%' AND isinactive = 'F' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'lx-%' AND isinactive = 'F' ORDER BY itemid",
+                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'htp-%' AND isinactive = 'F' ORDER BY itemid",
                 ]
             }
             

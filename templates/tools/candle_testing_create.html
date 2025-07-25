@@ -192,6 +192,40 @@
 .btn-secondary:hover {
     background: #cbd5e0;
 }
+
+/* Select2 Custom Styling */
+.select2-container--default .select2-selection--single {
+    height: 40px;
+    line-height: 40px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    padding-left: 12px;
+    padding-right: 20px;
+    color: #2d3748;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 38px;
+}
+
+.select2-dropdown {
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.select2-search--dropdown .select2-search__field {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+}
+
+.select2-results__option--highlighted {
+    background: #7c3aed;
+}
 </style>
 
 <script>
@@ -239,6 +273,19 @@ function loadProducts() {
                     const option = new Option(wick.name, wick.name);
                     select.add(option);
                 });
+            });
+            
+            // Initialize Select2 on all dropdowns for searchable autocomplete
+            $('#vessel, #wax, #fragrance').select2({
+                placeholder: 'Type to search...',
+                allowClear: true,
+                width: '100%'
+            });
+            
+            $('.wick-select').select2({
+                placeholder: 'Type to search wicks...',
+                allowClear: true,
+                width: '100%'
             });
         })
         .catch(error => {
