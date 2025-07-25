@@ -184,24 +184,7 @@ def debug_files():
     
     return jsonify(debug_info)
 
-@app.route('/version')
-def version():
-    """Version info endpoint"""
-    import subprocess
-    try:
-        git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()[:8]
-    except:
-        git_hash = 'unknown'
-    
-    return jsonify({
-        'version': '1.0.3',
-        'git_commit': git_hash,
-        'formats_count': len(LABEL_FORMATS),
-        'has_ol1000wx': 'ol1000wx' in LABEL_FORMATS,
-        'format_names': list(LABEL_FORMATS.keys()),
-        'ol1000wx_details': LABEL_FORMATS.get('ol1000wx').name if 'ol1000wx' in LABEL_FORMATS else None,
-        'deploy_timestamp': os.environ.get('FORCE_DEPLOY', 'not set')
-    })
+# Version route removed - defined later in the file with full features
 
 # ==========================================
 # LABEL PRINTER ROUTES
