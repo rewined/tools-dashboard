@@ -226,6 +226,33 @@
 .select2-results__option--highlighted {
     background: #7c3aed;
 }
+
+/* Fix dropdown positioning */
+.candle-select-dropdown {
+    margin-top: 2px !important;
+}
+
+.select2-container--open .select2-dropdown {
+    z-index: 9999;
+}
+
+/* Make search box more prominent */
+.select2-search--dropdown {
+    padding: 8px;
+    background: #f7fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.select2-search--dropdown .select2-search__field {
+    width: 100%;
+    font-size: 14px;
+}
+
+/* Ensure dropdown doesn't overlap */
+.form-group {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
 </style>
 
 <script>
@@ -276,16 +303,23 @@ function loadProducts() {
             });
             
             // Initialize Select2 on all dropdowns for searchable autocomplete
+            // Using minimumResultsForSearch: 0 to always show search box
             $('#vessel, #wax, #fragrance').select2({
                 placeholder: 'Type to search...',
                 allowClear: true,
-                width: '100%'
+                width: '100%',
+                minimumResultsForSearch: 0,
+                dropdownAutoWidth: true,
+                dropdownCssClass: 'candle-select-dropdown'
             });
             
             $('.wick-select').select2({
                 placeholder: 'Type to search wicks...',
                 allowClear: true,
-                width: '100%'
+                width: '100%',
+                minimumResultsForSearch: 0,
+                dropdownAutoWidth: true,
+                dropdownCssClass: 'candle-select-dropdown'
             });
         })
         .catch(error => {
