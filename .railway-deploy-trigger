@@ -1,0 +1,4 @@
+DEPLOY_TRIGGER: 2025-07-25T18:58:00Z
+PURPOSE: Force Railway to deploy latest thermal printer changes
+TARGET_COMMIT: 54ed643
+FEATURES: Thermal printer support with one label per page
