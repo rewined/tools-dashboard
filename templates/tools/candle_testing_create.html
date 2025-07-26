@@ -491,6 +491,10 @@ function loadProducts() {
                     option: function(item, escape) {
                         return '<div>' + escape(item.name) + '</div>';
                     }
+                },
+                onChange: function(value) {
+                    checkSmartSelectEnabled();
+                    clearProbabilityBadges();
                 }
             });
             
@@ -500,7 +504,11 @@ function loadProducts() {
                 labelField: 'name',
                 searchField: 'name',
                 create: false,
-                options: data.waxes
+                options: data.waxes,
+                onChange: function(value) {
+                    checkSmartSelectEnabled();
+                    clearProbabilityBadges();
+                }
             });
             
             $('#fragrance').selectize({
@@ -509,7 +517,11 @@ function loadProducts() {
                 labelField: 'name',
                 searchField: 'name',
                 create: false,
-                options: data.fragrances
+                options: data.fragrances,
+                onChange: function(value) {
+                    checkSmartSelectEnabled();
+                    clearProbabilityBadges();
+                }
             });
             
             // Initialize all wick selects
@@ -542,6 +554,10 @@ function loadProducts() {
                 window.productData.vessels.forEach(vessel => {
                     vesselSelect.add(new Option(vessel.name, vessel.name));
                 });
+                vesselSelect.addEventListener('change', () => {
+                    checkSmartSelectEnabled();
+                    clearProbabilityBadges();
+                });
                 
                 // Waxes
                 const waxSelect = document.getElementById('wax');
@@ -549,12 +565,20 @@ function loadProducts() {
                 window.productData.waxes.forEach(wax => {
                     waxSelect.add(new Option(wax.name, wax.name));
                 });
+                waxSelect.addEventListener('change', () => {
+                    checkSmartSelectEnabled();
+                    clearProbabilityBadges();
+                });
                 
                 // Fragrances
                 const fragranceSelect = document.getElementById('fragrance');
                 fragranceSelect.innerHTML = '<option value="">Select a fragrance...</option>';
                 window.productData.fragrances.forEach(fragrance => {
                     fragranceSelect.add(new Option(fragrance.name, fragrance.name));
+                });
+                fragranceSelect.addEventListener('change', () => {
+                    checkSmartSelectEnabled();
+                    clearProbabilityBadges();
                 });
                 
                 // Wicks
