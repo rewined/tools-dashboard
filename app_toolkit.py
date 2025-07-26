@@ -33,7 +33,12 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['OUTPUT_FOLDER'] = 'static/output'
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///candle_testing.db')
+# Force SQLite for local candle testing database (not Supabase)
+if os.environ.get('DATABASE_URL', '').startswith('postgresql://'):
+    # Railway may set DATABASE_URL to Supabase, but we want SQLite for candle testing
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///candle_testing.db'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///candle_testing.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize database
@@ -48,8 +53,10 @@ SUPABASE_KEY = os.environ.get('SUPABASE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXV
 supabase_client = None
 try:
     from supabase import create_client, Client
-    if SUPABASE_URL and SUPABASE_KEY and SUPABASE_URL != "https://ounsopanyjrjqmhbmxej.supabase.co":
+    # Always use the Supabase client with the provided URL and key
+    if SUPABASE_URL and SUPABASE_KEY:
         supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        print(f"✅ Supabase client initialized")
     else:
         print("Supabase credentials not configured - using CSV/sample data")
 except ImportError:
