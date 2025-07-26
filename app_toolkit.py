@@ -941,17 +941,32 @@ def get_wick_recommendations(vessel):
         # Parse vessel name to extract size info
         vessel_lower = vessel.lower()
         
-        # Try to extract oz from vessel name
+        # Try to extract oz from vessel name (multiple patterns)
         import re
+        
+        # Try different patterns for size extraction
         oz_match = re.search(r'(\d+(?:\.\d+)?)\s*oz', vessel_lower)
+        if not oz_match:
+            # Try pattern like "8oz" or "8 oz"
+            oz_match = re.search(r'(\d+(?:\.\d+)?)\s*oz', vessel_lower)
+        if not oz_match:
+            # Try pattern with numbers followed by ounce indicators
+            oz_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:ounce|ounces)', vessel_lower)
+        if not oz_match:
+            # Try pattern with just numbers (assume common sizes)
+            number_match = re.search(r'(\d+(?:\.\d+)?)', vessel_lower)
+            if number_match:
+                num = float(number_match.group(1))
+                # Common candle sizes
+                if 4 <= num <= 20:
+                    oz_match = number_match
         
         if not oz_match:
-            return jsonify({
-                'success': False,
-                'message': 'Could not determine vessel size'
-            })
-        
-        oz_fill = float(oz_match.group(1))
+            # Default to medium size if we can't determine
+            print(f"Could not parse vessel size from: {vessel}, defaulting to 8oz")
+            oz_fill = 8.0
+        else:
+            oz_fill = float(oz_match.group(1))
         
         # Categorize vessel size and estimate diameter
         # Updated based on actual product data - many small candles (2.5oz)
