@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-section">
+    <div class="items-grid" id="itemsGrid">
+        <div class="item-row">
+            <input type="text" placeholder="SKU" class="form-control sku-input" data-row="0">
+            <input type="number" placeholder="Price" step="0.01" min="0" class="form-control price-input" data-row="0">
+            <input type="number" placeholder="QTY" min="1" value="1" class="form-control qty-input" data-row="0">
+            <button onclick="removeRow(0)" class="btn-remove" style="visibility: hidden;">×</button>
+        </div>
+    </div>
+    
+    <div class="action-buttons">
+        <button onclick="addRow()" class="btn btn-secondary">+ Add Item</button>
+        <div class="generate-controls">
+            <select id="formatSelect" class="form-control format-select">
+                {% for key, format in formats.items() %}
+                <option value="{{ key }}">{{ format.name }}</option>
+                {% endfor %}
+            </select>
+            <button onclick="generateLabels()" class="btn btn-primary">Generate Labels</button>
+        </div>
+    </div>
+</div>
+
+<!-- CSV Upload Section -->
+<div class="csv-upload-section">
+    <div class="upload-area" id="uploadArea">
+        <span class="upload-text">Drop CSV here or click to upload</span>
+        <input type="file" id="fileInput" accept=".csv" hidden>
+    </div>
+</div>
+
+<div id="resultSection" class="result-section" style="display: none;">
+    <div class="success-message">
+        <svg class="success-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <h3>Labels Generated!</h3>
+        <p id="resultMessage"></p>
+        <div class="button-group">
+            <a id="downloadBtn" href="#" class="btn btn-primary" download>Download PDF</a>
+            <button onclick="resetForm()" class="btn btn-secondary">New Labels</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/app_clean.js') }}"></script>
+{% endblock %}

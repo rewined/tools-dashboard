@@ -1,0 +1,198 @@
+{% extends "toolkit_base.html" %}
+
+{% block title %}Candle Testing Admin - Team Toolkit{% endblock %}
+{% block nav_title %}Candle Testing Admin{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>Candle Testing Administration</h2>
+    
+    <div class="admin-section">
+        <h3>Assembly Analysis</h3>
+        <p>Analyze NetSuite assembly items (RW1 and CF1) to extract wick patterns and build recommendations.</p>
+        
+        <button id="analyzeBtn" class="btn btn-primary">
+            🔍 Analyze Assembly Items
+        </button>
+        
+        <div id="analysisResults" class="results-container" style="display: none;">
+            <h4>Analysis Results</h4>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-container {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.admin-section {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.admin-section h3 {
+    color: #4a5568;
+    margin-bottom: 1rem;
+}
+
+.admin-section p {
+    color: #718096;
+    margin-bottom: 1.5rem;
+}
+
+.results-container {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f7fafc;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.results-container h4 {
+    color: #2d3748;
+    margin-bottom: 1rem;
+}
+
+.assembly-item {
+    background: white;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+.assembly-item h5 {
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+}
+
+.component-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.component {
+    padding: 0.25rem 0;
+    color: #718096;
+    font-size: 0.875rem;
+}
+
+.component strong {
+    color: #4a5568;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('analyzeBtn').addEventListener('click', analyzeAssemblies);
+});
+
+function analyzeAssemblies() {
+    const btn = document.getElementById('analyzeBtn');
+    const resultsDiv = document.getElementById('analysisResults');
+    const resultsContent = document.getElementById('resultsContent');
+    
+    // Show loading state
+    btn.disabled = true;
+    btn.innerHTML = '🔄 Analyzing...';
+    
+    fetch('/candle-testing/analyze-assemblies', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show results
+            resultsDiv.style.display = 'block';
+            
+            let html = `<p>Found ${data.count} assembly items with oz fill data.</p>`;
+            
+            if (data.results && data.results.length > 0) {
+                html += '<div class="assembly-list">';
+                
+                data.results.forEach(assembly => {
+                    html += `
+                        <div class="assembly-item">
+                            <h5>${assembly.assembly_itemid} - ${assembly.assembly_name}</h5>
+                            <p><strong>Oz Fill:</strong> ${assembly.oz_fill}</p>
+                            <div class="component-list">
+                    `;
+                    
+                    if (assembly.vessel) {
+                        html += `<div class="component"><strong>Vessel:</strong> ${assembly.vessel.itemid}</div>`;
+                    }
+                    if (assembly.wax) {
+                        html += `<div class="component"><strong>Wax:</strong> ${assembly.wax.itemid}</div>`;
+                    }
+                    if (assembly.fragrance) {
+                        html += `<div class="component"><strong>Fragrance:</strong> ${assembly.fragrance.itemid}</div>`;
+                    }
+                    if (assembly.wicks && assembly.wicks.length > 0) {
+                        html += `<div class="component"><strong>Wicks:</strong> ${assembly.wicks.map(w => w.itemid).join(', ')}</div>`;
+                    }
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                
+                if (data.count > 10) {
+                    html += `<p><em>Showing first 10 of ${data.count} results.</em></p>`;
+                }
+            }
+            
+            resultsContent.innerHTML = html;
+        } else {
+            alert('Analysis failed: ' + (data.message || data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '🔍 Analyze Assembly Items';
+    });
+}
+</script>
+{% endblock %}

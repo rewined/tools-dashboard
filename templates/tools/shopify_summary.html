@@ -1,0 +1,521 @@
+{% extends "toolkit_base.html" %}
+
+{% block title %}Shopify Weekly Summary - Team Toolkit{% endblock %}
+
+{% block head %}
+<style>
+    .summary-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .control-panel {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    
+    .control-panel h2 {
+        margin-top: 0;
+        color: white;
+    }
+    
+    .controls-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .control-group {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+    }
+    
+    .control-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+    
+    .control-group input,
+    .control-group select {
+        width: 100%;
+        padding: 8px;
+        border: none;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+    }
+    
+    .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: white;
+        color: #667eea;
+        font-weight: 600;
+    }
+    
+    .btn-primary:hover {
+        background: #f7fafc;
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .status-message {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: none;
+    }
+    
+    .status-success {
+        background: #48bb78;
+        color: white;
+    }
+    
+    .status-error {
+        background: #f56565;
+        color: white;
+    }
+    
+    .status-info {
+        background: #4299e1;
+        color: white;
+    }
+    
+    .preview-section {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+    
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .metric-card {
+        background: #f7fafc;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        border-left: 4px solid #667eea;
+    }
+    
+    .metric-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 5px;
+    }
+    
+    .metric-label {
+        font-size: 14px;
+        color: #718096;
+    }
+    
+    .metric-change {
+        font-size: 12px;
+        margin-top: 5px;
+    }
+    
+    .metric-change.positive {
+        color: #48bb78;
+    }
+    
+    .metric-change.negative {
+        color: #f56565;
+    }
+    
+    .insights-content {
+        line-height: 1.8;
+        color: #4a5568;
+        margin-bottom: 20px;
+    }
+    
+    .feedback-section {
+        background: #fef5e7;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 30px;
+    }
+    
+    .feedback-section h3 {
+        color: #744210;
+        margin-top: 0;
+    }
+    
+    .feedback-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .feedback-item {
+        background: white;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        border-left: 3px solid #f6ad55;
+    }
+    
+    .spinner {
+        display: none;
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="summary-container">
+    <h1>Shopify Weekly Summary</h1>
+    <p class="subtitle">AI-powered analytics and insights for your business</p>
+    
+    <!-- Status Messages -->
+    <div id="statusMessage" class="status-message"></div>
+    
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <h2>Report Settings</h2>
+        
+        <div class="controls-grid">
+            <div class="control-group">
+                <label for="recipientEmail">Recipient Email</label>
+                <input type="email" id="recipientEmail" placeholder="owner@candlefish.com" 
+                       value="{{ default_email }}">
+            </div>
+            
+            <div class="control-group">
+                <label for="recipientName">Recipient Name</label>
+                <input type="text" id="recipientName" placeholder="Sarah" 
+                       value="{{ default_name }}">
+            </div>
+            
+            <div class="control-group">
+                <label for="weekStart">Week Starting</label>
+                <input type="date" id="weekStart" value="{{ default_week_start }}">
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="generateReport()">
+                Generate & Send Report
+            </button>
+            <button class="btn btn-secondary" onclick="previewReport()">
+                Preview Only
+            </button>
+            <button class="btn btn-secondary" onclick="testEmail()">
+                Send Test Email
+            </button>
+        </div>
+    </div>
+    
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="spinner"></div>
+    
+    <!-- Preview Section -->
+    <div id="previewSection" class="preview-section" style="display: none;">
+        <h2>Report Preview</h2>
+        
+        <!-- Metrics Grid -->
+        <div id="metricsGrid" class="metrics-grid"></div>
+        
+        <!-- AI Insights -->
+        <div id="insightsSection">
+            <h3>AI-Generated Insights</h3>
+            <div id="insightsContent" class="insights-content"></div>
+        </div>
+        
+        <!-- Questions Section -->
+        <div id="questionsSection">
+            <h3>Questions for Next Time</h3>
+            <ul id="questionsList"></ul>
+        </div>
+    </div>
+    
+    <!-- Recent Feedback -->
+    <div class="feedback-section">
+        <h3>Recent Customer Feedback</h3>
+        <ul id="feedbackList" class="feedback-list">
+            <li class="feedback-item">No feedback yet. Replies to weekly emails will appear here.</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+function showStatus(message, type) {
+    const statusEl = document.getElementById('statusMessage');
+    statusEl.textContent = message;
+    statusEl.className = `status-message status-${type}`;
+    statusEl.style.display = 'block';
+    
+    if (type !== 'error') {
+        setTimeout(() => {
+            statusEl.style.display = 'none';
+        }, 5000);
+    }
+}
+
+function showLoading(show) {
+    document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+}
+
+async function generateReport() {
+    const email = document.getElementById('recipientEmail').value;
+    const name = document.getElementById('recipientName').value;
+    const weekStart = document.getElementById('weekStart').value;
+    
+    if (!email) {
+        showStatus('Please enter a recipient email', 'error');
+        return;
+    }
+    
+    showLoading(true);
+    showStatus('Generating report and sending email...', 'info');
+    
+    try {
+        const response = await fetch('/shopify-summary/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                recipient_email: email,
+                recipient_name: name,
+                week_start: weekStart,
+                send_email: true
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatus('Report generated and email sent successfully!', 'success');
+            displayPreview(data);
+        } else {
+            showStatus(`Error: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function previewReport() {
+    const weekStart = document.getElementById('weekStart').value;
+    
+    showLoading(true);
+    showStatus('Generating preview...', 'info');
+    
+    try {
+        const response = await fetch('/shopify-summary/preview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                week_start: weekStart
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatus('Preview generated successfully!', 'success');
+            displayPreview(data);
+        } else {
+            showStatus(`Error: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function displayPreview(data) {
+    // Show preview section
+    document.getElementById('previewSection').style.display = 'block';
+    
+    // Display metrics
+    const metricsGrid = document.getElementById('metricsGrid');
+    metricsGrid.innerHTML = '';
+    
+    const metrics = [
+        {
+            label: 'Total Revenue',
+            value: `$${data.analytics_data.current_week.total_revenue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+            change: data.analytics_data.yoy_changes.total_revenue_change
+        },
+        {
+            label: 'Orders',
+            value: data.analytics_data.current_week.order_count,
+            change: data.analytics_data.yoy_changes.order_count_change
+        },
+        {
+            label: 'Avg Order Value',
+            value: `$${data.analytics_data.current_week.avg_order_value.toFixed(2)}`,
+            change: data.analytics_data.yoy_changes.avg_order_value_change
+        },
+        {
+            label: 'Items Sold',
+            value: data.analytics_data.current_week.total_items_sold,
+            change: data.analytics_data.yoy_changes.total_items_sold_change
+        }
+    ];
+    
+    metrics.forEach(metric => {
+        const card = document.createElement('div');
+        card.className = 'metric-card';
+        
+        const changeClass = metric.change > 0 ? 'positive' : 'negative';
+        const changeSymbol = metric.change > 0 ? '+' : '';
+        
+        card.innerHTML = `
+            <div class="metric-value">${metric.value}</div>
+            <div class="metric-label">${metric.label}</div>
+            <div class="metric-change ${changeClass}">${changeSymbol}${metric.change.toFixed(1)}% YoY</div>
+        `;
+        
+        metricsGrid.appendChild(card);
+    });
+    
+    // Display insights
+    if (data.insights && data.insights.insights_html) {
+        document.getElementById('insightsContent').innerHTML = data.insights.insights_html;
+    }
+    
+    // Display questions
+    if (data.insights && data.insights.questions) {
+        const questionsList = document.getElementById('questionsList');
+        questionsList.innerHTML = '';
+        
+        data.insights.questions.forEach(question => {
+            const li = document.createElement('li');
+            li.textContent = question;
+            questionsList.appendChild(li);
+        });
+    }
+}
+
+async function testEmail() {
+    const email = document.getElementById('recipientEmail').value;
+    
+    if (!email) {
+        showStatus('Please enter a recipient email', 'error');
+        return;
+    }
+    
+    showLoading(true);
+    showStatus('Sending test email...', 'info');
+    
+    try {
+        const response = await fetch('/shopify-summary/test-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                recipient_email: email
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatus('Test email sent successfully!', 'success');
+        } else {
+            showStatus(`Error: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Load recent feedback on page load
+async function loadRecentFeedback() {
+    try {
+        const response = await fetch('/shopify-summary/feedback');
+        const data = await response.json();
+        
+        if (data.feedback && data.feedback.length > 0) {
+            const feedbackList = document.getElementById('feedbackList');
+            feedbackList.innerHTML = '';
+            
+            data.feedback.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'feedback-item';
+                li.innerHTML = `
+                    <strong>${item.name}</strong> - ${new Date(item.received_at).toLocaleDateString()}
+                    <p>${item.content}</p>
+                `;
+                feedbackList.appendChild(li);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading feedback:', error);
+    }
+}
+
+// Set default date to last Monday
+function setDefaultWeekStart() {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const lastMonday = new Date(today);
+    lastMonday.setDate(today.getDate() - daysToMonday - 7);
+    
+    document.getElementById('weekStart').value = lastMonday.toISOString().split('T')[0];
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    setDefaultWeekStart();
+    loadRecentFeedback();
+});
+</script>
+{% endblock %}

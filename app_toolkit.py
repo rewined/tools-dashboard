@@ -18,6 +18,14 @@ from src.label_formats import LABEL_FORMATS
 from src.models import db, CandleTest, CandleTrial, CandleEvaluation, Product
 from src.netsuite_client import NetSuiteClient
 
+# Import wick-onomics functionality
+try:
+    from src.wick_api import wick_api
+    from src.wick_predictor import WickPredictor
+    wick_api_available = True
+except ImportError:
+    wick_api_available = False
+    print("Wick-onomics modules not available")
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Change this in production
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -50,6 +58,13 @@ except Exception as e:
     print(f"Error initializing Supabase client: {e}")
     supabase_client = None
 
+# Register wick API blueprint if available
+if wick_api_available and supabase_client:
+    # Initialize predictor with supabase client
+    app.register_blueprint(wick_api)
+    print("✅ Wick-onomics API registered at /api/wick")
+else:
+    print("⚠️  Wick-onomics API not available - Supabase required")
 # Ensure upload and output directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
@@ -126,6 +141,13 @@ def dashboard():
             'icon': '🕯️',
             'url': '/candle-testing',
             'status': 'active'
+        },
+        {
+            'name': 'Wick Analytics',
+            'description': 'AI-powered wick predictions and analytics',
+            'icon': '🔮',
+            'url': '/wick-analytics',
+            'status': 'active' if wick_api_available and supabase_client else 'coming-soon'
         },
         {
             'name': 'Inventory Scanner',
@@ -806,6 +828,291 @@ def candle_testing_view_test(test_id):
     return render_template('tools/candle_testing_results.html', 
                          test=test.to_dict(), 
                          results=results)
+
+@app.route('/candle-testing/analyze-assemblies', methods=['POST'])
+def analyze_assemblies():
+    """Analyze NetSuite assembly items for wick recommendations"""
+    try:
+        # Initialize NetSuite client
+        netsuite = NetSuiteClient()
+        
+        if not netsuite.is_configured:
+            return jsonify({'error': 'NetSuite not configured'}), 400
+        
+        # Get assembly items with BOM
+        assemblies = netsuite.get_assembly_items()
+        
+        if not assemblies:
+            return jsonify({
+                'success': False,
+                'message': 'No assembly items found with oz fill data'
+            })
+        
+        # Process and categorize assemblies
+        analysis_results = []
+        
+        for assembly in assemblies:
+            oz_fill = assembly.get('oz_fill')
+            if not oz_fill:
+                continue
+            
+            # Extract components
+            components = assembly.get('components', {})
+            
+            # Create analysis record
+            analysis = {
+                'assembly_id': assembly.get('id'),
+                'assembly_itemid': assembly.get('itemid'),
+                'assembly_name': assembly.get('displayname'),
+                'oz_fill': oz_fill,
+                'vessel': components.get('vessel'),
+                'wax': components.get('wax'),
+                'fragrance': components.get('fragrance'),
+                'wicks': components.get('wicks', [])
+            }
+            
+            analysis_results.append(analysis)
+        
+        # Store results in session for review
+        session['assembly_analysis'] = analysis_results
+        
+        return jsonify({
+            'success': True,
+            'count': len(analysis_results),
+            'results': analysis_results[:10]  # Return first 10 for preview
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/candle-testing/wick-recommendations/<vessel>')
+def get_wick_recommendations(vessel):
+    """Get smart wick recommendations based on vessel and other factors"""
+    try:
+        # Check if we can use the advanced wick-onomics system
+        if wick_api_available and supabase_client:
+            # Try to get vessel, wax, and fragrance IDs from request
+            wax = request.args.get('wax', '')
+            fragrance = request.args.get('fragrance', '')
+            
+            # Look up IDs in database
+            try:
+                vessel_result = supabase_client.table('vessels').select('id').ilike('name', f'%{vessel}%').limit(1).execute()
+                wax_result = supabase_client.table('wax_types').select('id').ilike('name', f'%{wax}%').limit(1).execute() if wax else None
+                fragrance_result = supabase_client.table('fragrance_oils').select('id').ilike('name', f'%{fragrance}%').limit(1).execute() if fragrance else None
+                
+                if vessel_result.data and wax_result and wax_result.data and fragrance_result and fragrance_result.data:
+                    # Use the ML-powered predictor
+                    predictor = WickPredictor(supabase_client)
+                    recommendations = predictor.get_comprehensive_recommendations(
+                        vessel_id=vessel_result.data[0]['id'],
+                        wax_type_id=wax_result.data[0]['id'],
+                        fragrance_id=fragrance_result.data[0]['id'],
+                        fragrance_load=8.5  # Default assumption
+                    )
+                    
+                    # Format for UI
+                    formatted_recs = []
+                    for rec in recommendations[:8]:
+                        formatted_recs.append({
+                            'wick': rec.wick_name,
+                            'probability': rec.confidence,
+                            'confidence_class': 'high' if rec.confidence > 0.7 else 'medium' if rec.confidence > 0.4 else 'low',
+                            'reason': rec.reasoning
+                        })
+                    
+                    return jsonify({
+                        'success': True,
+                        'recommendations': formatted_recs,
+                        'source': 'ml_prediction'
+                    })
+            except Exception as e:
+                print(f"Error using ML predictor: {e}")
+                # Fall through to heuristic method
+        
+        # Original heuristic-based implementation
+        # Parse vessel name to extract size info
+        vessel_lower = vessel.lower()
+        
+        # Try to extract oz from vessel name
+        import re
+        oz_match = re.search(r'(\d+(?:\.\d+)?)\s*oz', vessel_lower)
+        
+        if not oz_match:
+            return jsonify({
+                'success': False,
+                'message': 'Could not determine vessel size'
+            })
+        
+        oz_fill = float(oz_match.group(1))
+        
+        # Categorize vessel size and estimate diameter
+        # Updated based on actual product data - many small candles (2.5oz)
+        if oz_fill <= 2.5:
+            size_category = 'xs'
+            diameter_estimate = (1.5, 2.0)
+            base_wicks = ['CD-2', 'CD-3', 'CD-4', 'ECO-1', 'ECO-2']
+        elif oz_fill <= 4:
+            size_category = 'small'
+            diameter_estimate = (2.0, 2.5)
+            base_wicks = ['CD-4', 'CD-5', 'CD-6', 'ECO-2', 'ECO-4']
+        elif oz_fill <= 8:
+            size_category = 'medium'
+            diameter_estimate = (2.5, 3.0)
+            base_wicks = ['CD-6', 'CD-8', 'CD-10', 'ECO-4', 'ECO-6', 'LX-10']
+        elif oz_fill <= 12:
+            size_category = 'large'
+            diameter_estimate = (3.0, 3.5)
+            base_wicks = ['CD-10', 'CD-12', 'CD-14', 'ECO-8', 'ECO-10', 'LX-12', 'HTP-73']
+        else:
+            size_category = 'xl'
+            diameter_estimate = (3.5, 4.0)
+            base_wicks = ['CD-14', 'CD-16', 'CD-18', 'ECO-12', 'ECO-14', 'LX-14', 'HTP-93']
+        
+        # Get wax and fragrance from request args
+        wax = request.args.get('wax', '').lower()
+        fragrance = request.args.get('fragrance', '').lower()
+        
+        # Adjust recommendations based on wax type
+        wick_adjustment = 0
+        if 'soy' in wax:
+            wick_adjustment = 0  # Soy tends to be baseline
+        elif 'paraffin' in wax:
+            wick_adjustment = -1  # Paraffin burns hotter, may need smaller wick
+        elif 'coconut' in wax:
+            wick_adjustment = 1  # Coconut wax may need larger wick
+        elif 'beeswax' in wax:
+            wick_adjustment = 1  # Beeswax is dense, needs larger wick
+        
+        # Adjust for fragrance density (simplified)
+        if any(word in fragrance for word in ['vanilla', 'bakery', 'cinnamon', 'spice']):
+            wick_adjustment += 1  # Heavy fragrances need larger wicks
+        elif any(word in fragrance for word in ['citrus', 'fresh', 'clean', 'light']):
+            wick_adjustment -= 0  # Light fragrances burn easier
+        
+        # Generate recommendations with probability scores
+        recommendations = []
+        
+        # Calculate probabilities for each wick
+        for i, base_wick in enumerate(base_wicks):
+            # Base probability starts at 85% for primary recommendations
+            base_probability = 85 - (i * 5)  # Decrease by 5% for each position
+            
+            # Extract wick series and size
+            parts = base_wick.split('-')
+            if len(parts) == 2:
+                series = parts[0]
+                try:
+                    size = int(parts[1])
+                    
+                    # Primary recommendation
+                    prob = base_probability
+                    
+                    # Adjust probability based on wax type match
+                    if series == 'CD' and 'soy' in wax:
+                        prob += 5  # CD wicks work well with soy
+                    elif series == 'ECO' and ('soy' in wax or 'coconut' in wax):
+                        prob += 7  # ECO great for natural waxes
+                    elif series == 'LX' and 'paraffin' in wax:
+                        prob += 5  # LX good for paraffin
+                    elif series == 'HTP' and 'blend' in wax:
+                        prob += 5  # HTP good for blends
+                    
+                    recommendations.append({
+                        'wick': f"{series}-{size}",
+                        'probability': min(95, prob),  # Cap at 95%
+                        'reason': 'Primary size match'
+                    })
+                    
+                    # Size variations based on adjustments
+                    if wick_adjustment < 0 and size > 2:
+                        # Smaller wick variation
+                        var_prob = base_probability - 15
+                        recommendations.append({
+                            'wick': f"{series}-{size - 2}",
+                            'probability': max(40, var_prob),
+                            'reason': 'Smaller variant for hot-burning wax'
+                        })
+                    elif wick_adjustment > 0:
+                        # Larger wick variation
+                        var_prob = base_probability - 10
+                        recommendations.append({
+                            'wick': f"{series}-{size + 2}",
+                            'probability': max(50, var_prob),
+                            'reason': 'Larger variant for dense wax/fragrance'
+                        })
+                    else:
+                        # Both variations for neutral
+                        if size > 2:
+                            recommendations.append({
+                                'wick': f"{series}-{size - 2}",
+                                'probability': max(40, base_probability - 20),
+                                'reason': 'Alternative smaller size'
+                            })
+                        recommendations.append({
+                            'wick': f"{series}-{size + 2}",
+                            'probability': max(40, base_probability - 20),
+                            'reason': 'Alternative larger size'
+                        })
+                    
+                except ValueError:
+                    recommendations.append({
+                        'wick': base_wick,
+                        'probability': base_probability,
+                        'reason': 'Standard recommendation'
+                    })
+            else:
+                recommendations.append({
+                    'wick': base_wick,
+                    'probability': base_probability,
+                    'reason': 'Standard recommendation'
+                })
+        
+        # Sort by probability and remove duplicates
+        seen_wicks = set()
+        unique_recommendations = []
+        for rec in sorted(recommendations, key=lambda x: x['probability'], reverse=True):
+            if rec['wick'] not in seen_wicks:
+                seen_wicks.add(rec['wick'])
+                unique_recommendations.append(rec)
+        
+        # Limit to top 8 for better selection
+        recommendations = unique_recommendations[:8]
+        
+        return jsonify({
+            'success': True,
+            'vessel_size': {
+                'oz_fill': oz_fill,
+                'category': size_category,
+                'diameter_estimate': f"{diameter_estimate[0]}-{diameter_estimate[1]} inches"
+            },
+            'recommendations': recommendations,
+            'factors': {
+                'wax_type': wax or 'unknown',
+                'fragrance_type': fragrance or 'unknown',
+                'adjustment': wick_adjustment
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/candle-testing/admin')
+def candle_testing_admin():
+    """Admin page for candle testing"""
+    return render_template('tools/candle_testing_admin.html')
+
+# ==========================================
+# WICK ANALYTICS ROUTE
+# ==========================================
+
+@app.route('/wick-analytics')
+def wick_analytics():
+    """Wick-onomics analytics dashboard"""
+    if not wick_api_available or not supabase_client:
+        flash('Wick Analytics requires Supabase configuration', 'warning')
+        return redirect(url_for('dashboard'))
+    return render_template('tools/wick_analytics.html')
 
 # ==========================================
 # COMING SOON ROUTES

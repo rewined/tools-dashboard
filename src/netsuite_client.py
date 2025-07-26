@@ -324,6 +324,71 @@ class NetSuiteClient:
                 {'id': 'wick-008', 'name': 'Wick.LX12 - LX Series 12'}
             ]
         }
+    
+    def get_assembly_items(self) -> List[Dict[str, Any]]:
+        """Get assembly items with BOM components and oz fill (custitem16)"""
+        if not self.is_configured:
+            return []
+        
+        try:
+            url = f"{self.base_url}/services/rest/query/v1/suiteql"
+            
+            # Query assembly items with their custitem16 (oz fill) field
+            # Focus on RW1 and CF1 assemblies for candle products
+            assembly_query = """
+                SELECT 
+                    i.id,
+                    i.itemid,
+                    i.displayname,
+                    i.custitem16 as oz_fill,
+                    i.itemtype
+                FROM item i
+                WHERE i.isinactive = 'F'
+                    AND i.custitem16 IS NOT NULL
+                    AND (LOWER(i.itemid) LIKE 'rw1%' OR LOWER(i.itemid) LIKE 'cf1%')
+                    AND i.itemtype = 'Assembly'
+                ORDER BY i.itemid
+            """
+            
+            headers = {
+                'Authorization': self._generate_oauth_header('POST', url),
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'transient'
+            }
+            
+            response = requests.post(url, headers=headers, json={"q": assembly_query}, timeout=30)
+            
+            if response.status_code != 200:
+                print(f"Error getting assembly items: {response.status_code}")
+                print(f"Response: {response.text}")
+                return []
+            
+            assemblies = response.json().get('items', [])
+            result = []
+            
+            # For now, just return the assembly items without BOM details
+            # We can analyze the item names to infer vessel size patterns
+            for assembly in assemblies:
+                result.append({
+                    'id': assembly.get('id'),
+                    'itemid': assembly.get('itemid'),
+                    'displayname': assembly.get('displayname'),
+                    'oz_fill': assembly.get('oz_fill'),
+                    'itemtype': assembly.get('itemtype'),
+                    'components': {
+                        'vessel': None,
+                        'wax': None,
+                        'fragrance': None,
+                        'wicks': []
+                    }
+                })
+            
+            return result
+            
+        except Exception as e:
+            print(f"Error in get_assembly_items: {e}")
+            return []
 
 
 # Alternative SOAP client for NetSuite (if REST API is not available)

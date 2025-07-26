@@ -1,0 +1,883 @@
+{% extends "toolkit_base.html" %}
+
+{% block title %}Wick-onomics Dashboard - Team Toolkit{% endblock %}
+{% block nav_title %}Wick-onomics Analytics{% endblock %}
+
+{% block content %}
+<div class="wick-analytics-dashboard">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+        <h1>Wick-onomics Dashboard</h1>
+        <p class="subtitle">AI-powered wick selection for the wax changeover</p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="action-btn primary" onclick="showPredictModal()">
+            <i class="icon">🔮</i> Predict Wick
+        </button>
+        <button class="action-btn secondary" onclick="loadTestPriorities()">
+            <i class="icon">🎯</i> Test Priorities
+        </button>
+        <button class="action-btn secondary" onclick="showQuickCheck()">
+            <i class="icon">✓</i> Quick Check
+        </button>
+        <button class="action-btn danger" onclick="triggerRetrain()">
+            <i class="icon">🔄</i> Retrain Model
+        </button>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid">
+        <!-- Model Performance Card -->
+        <div class="dashboard-card">
+            <h3>Model Performance</h3>
+            <div class="metric-display">
+                <div class="metric">
+                    <span class="metric-value" id="modelAccuracy">--</span>
+                    <span class="metric-label">Accuracy</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value" id="sampleSize">--</span>
+                    <span class="metric-label">Training Samples</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value" id="modelVersion">--</span>
+                    <span class="metric-label">Version</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wax Conversion Status -->
+        <div class="dashboard-card">
+            <h3>Wax Conversion Progress</h3>
+            <div class="conversion-stats">
+                <div class="stat-row">
+                    <span>SKUs to Convert:</span>
+                    <span class="stat-value" id="totalSKUs">250</span>
+                </div>
+                <div class="stat-row">
+                    <span>Tests Completed:</span>
+                    <span class="stat-value" id="testsCompleted">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Predictions Made:</span>
+                    <span class="stat-value" id="predictionsMade">0</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="conversionProgress" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Priorities List -->
+        <div class="dashboard-card wide">
+            <h3>Test Priority Queue</h3>
+            <div class="priority-list" id="priorityList">
+                <div class="loading">Loading priorities...</div>
+            </div>
+        </div>
+
+        <!-- Heat Index Analysis -->
+        <div class="dashboard-card">
+            <h3>Fragrance Heat Index</h3>
+            <canvas id="heatIndexChart"></canvas>
+        </div>
+
+        <!-- Wax Conversion Deltas -->
+        <div class="dashboard-card">
+            <h3>Wax Conversion Patterns</h3>
+            <div class="conversion-patterns" id="conversionPatterns">
+                <div class="loading">Loading patterns...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prediction Modal -->
+    <div id="predictModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closePredictModal()">&times;</span>
+            <h2>Predict Optimal Wick</h2>
+            
+            <form id="predictForm">
+                <div class="form-group">
+                    <label>Vessel</label>
+                    <select id="predictVessel" required>
+                        <option value="">Select vessel...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>New Wax Type</label>
+                    <select id="predictWax" required>
+                        <option value="">Select wax...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Fragrance Oil</label>
+                    <select id="predictFragrance" required>
+                        <option value="">Select fragrance...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Fragrance Load %</label>
+                    <input type="number" id="predictLoad" min="0" max="20" step="0.1" value="8.5" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Converting from (optional)</label>
+                    <select id="predictOldWax">
+                        <option value="">N/A - New product</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Get Recommendations</button>
+            </form>
+            
+            <div id="predictionResults" class="prediction-results"></div>
+        </div>
+    </div>
+
+    <!-- Quick Check Modal -->
+    <div id="quickCheckModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeQuickCheckModal()">&times;</span>
+            <h2>Quick Wick Validation</h2>
+            
+            <form id="quickCheckForm">
+                <div class="form-row">
+                    <input type="text" id="checkVessel" placeholder="Vessel (e.g., 8oz Tumbler)" required>
+                    <input type="text" id="checkWax" placeholder="Wax (e.g., Soy C3)" required>
+                </div>
+                <div class="form-row">
+                    <input type="text" id="checkFragrance" placeholder="Fragrance (e.g., Vanilla Bean)" required>
+                    <input type="text" id="checkWick" placeholder="Wick (e.g., ECO-10)" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Check Compatibility</button>
+            </form>
+            
+            <div id="quickCheckResult" class="quick-check-result"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+.wick-analytics-dashboard {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.dashboard-header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #666;
+    font-size: 1.2em;
+}
+
+.quick-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.action-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.action-btn.secondary {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.action-btn.danger {
+    background: #ff6b6b;
+    color: white;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.dashboard-card.wide {
+    grid-column: span 2;
+}
+
+.dashboard-card h3 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.metric-display {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-value {
+    font-size: 2em;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.metric-label {
+    color: #666;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+.conversion-stats .stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #667eea;
+}
+
+.progress-bar {
+    height: 20px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transition: width 0.3s ease;
+}
+
+.priority-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.priority-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.priority-item:hover {
+    background: #f9f9f9;
+}
+
+.priority-info h4 {
+    margin: 0 0 5px 0;
+    color: #333;
+}
+
+.priority-info p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.priority-score {
+    text-align: right;
+}
+
+.uncertainty {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #ff6b6b;
+}
+
+.info-gain {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.conversion-patterns {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pattern-item {
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+
+.pattern-delta {
+    font-weight: bold;
+    color: #667eea;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #000;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group select,
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-row input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    width: 100%;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.prediction-results {
+    margin-top: 20px;
+}
+
+.recommendation-item {
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background: #f9f9f9;
+}
+
+.recommendation-item.high-confidence {
+    border-left: 4px solid #4caf50;
+}
+
+.recommendation-item.medium-confidence {
+    border-left: 4px solid #ff9800;
+}
+
+.recommendation-item.low-confidence {
+    border-left: 4px solid #f44336;
+}
+
+.wick-name {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.confidence-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+
+.confidence-badge.high {
+    background: #4caf50;
+    color: white;
+}
+
+.confidence-badge.medium {
+    background: #ff9800;
+    color: white;
+}
+
+.confidence-badge.low {
+    background: #f44336;
+    color: white;
+}
+
+.reasoning {
+    color: #666;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+.quick-check-result {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.quick-check-result.recommended {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.quick-check-result.possible {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.quick-check-result.not-recommended {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.loading {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Global variables
+let heatIndexChart = null;
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+    loadTestPriorities();
+    loadConversionPatterns();
+    initializeHeatIndexChart();
+    loadDropdownData();
+});
+
+// Load main dashboard metrics
+async function loadDashboardData() {
+    try {
+        // Get model performance metrics
+        const response = await fetch('/api/wick/retrain', {
+            method: 'GET'  // Just to get current metrics
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('modelAccuracy').textContent = (data.accuracy * 100).toFixed(1) + '%';
+            document.getElementById('sampleSize').textContent = data.sample_size || '--';
+            document.getElementById('modelVersion').textContent = data.model_version || 'heuristic_v1';
+        }
+        
+        // Get conversion progress (mock for now)
+        updateConversionProgress();
+        
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+    }
+}
+
+// Load test priorities
+async function loadTestPriorities() {
+    try {
+        const response = await fetch('/api/wick/test-priorities?limit=10');
+        const data = await response.json();
+        
+        const priorityList = document.getElementById('priorityList');
+        
+        if (data.success && data.priorities.length > 0) {
+            priorityList.innerHTML = data.priorities.map(p => `
+                <div class="priority-item">
+                    <div class="priority-info">
+                        <h4>${p.assembly_name}</h4>
+                        <p>${p.reason}</p>
+                    </div>
+                    <div class="priority-score">
+                        <div class="uncertainty">${(p.uncertainty_score * 100).toFixed(0)}%</div>
+                        <div class="info-gain">Info gain: ${p.information_gain.toFixed(2)}</div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            priorityList.innerHTML = '<p class="no-data">No tests needed at this time</p>';
+        }
+    } catch (error) {
+        console.error('Error loading test priorities:', error);
+        document.getElementById('priorityList').innerHTML = '<p class="error">Failed to load priorities</p>';
+    }
+}
+
+// Load wax conversion patterns
+async function loadConversionPatterns() {
+    try {
+        const response = await fetch('/api/wick/analytics/wax-conversion');
+        const data = await response.json();
+        
+        const patternsDiv = document.getElementById('conversionPatterns');
+        
+        if (data.success && data.conversions.length > 0) {
+            patternsDiv.innerHTML = data.conversions.slice(0, 5).map(c => `
+                <div class="pattern-item">
+                    <strong>${c.vessel}</strong><br>
+                    ${c.old_wax} → ${c.new_wax}: 
+                    <span class="pattern-delta">${c.wick_size_delta > 0 ? '+' : ''}${c.wick_size_delta} sizes</span>
+                    (${(c.confidence * 100).toFixed(0)}% conf)
+                </div>
+            `).join('');
+        } else {
+            patternsDiv.innerHTML = '<p class="no-data">No conversion patterns yet</p>';
+        }
+    } catch (error) {
+        console.error('Error loading conversion patterns:', error);
+    }
+}
+
+// Initialize heat index chart
+function initializeHeatIndexChart() {
+    const ctx = document.getElementById('heatIndexChart').getContext('2d');
+    heatIndexChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Fragrances',
+                data: [],
+                backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                pointRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Fragrance Heat Index Distribution'
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Heat Index'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Frequency'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Load sample data (would come from API)
+    updateHeatIndexChart();
+}
+
+// Update heat index chart with data
+function updateHeatIndexChart() {
+    // Mock data for demonstration
+    const mockData = [
+        {x: -1.2, y: 2},
+        {x: -0.8, y: 5},
+        {x: -0.3, y: 8},
+        {x: 0.1, y: 12},
+        {x: 0.4, y: 10},
+        {x: 0.8, y: 6},
+        {x: 1.3, y: 3}
+    ];
+    
+    heatIndexChart.data.datasets[0].data = mockData;
+    heatIndexChart.update();
+}
+
+// Update conversion progress
+function updateConversionProgress() {
+    const completed = parseInt(document.getElementById('testsCompleted').textContent) || 0;
+    const total = parseInt(document.getElementById('totalSKUs').textContent) || 250;
+    const percentage = (completed / total) * 100;
+    
+    document.getElementById('conversionProgress').style.width = percentage + '%';
+}
+
+// Modal functions
+function showPredictModal() {
+    document.getElementById('predictModal').style.display = 'block';
+}
+
+function closePredictModal() {
+    document.getElementById('predictModal').style.display = 'none';
+    document.getElementById('predictionResults').innerHTML = '';
+}
+
+function showQuickCheck() {
+    document.getElementById('quickCheckModal').style.display = 'block';
+}
+
+function closeQuickCheckModal() {
+    document.getElementById('quickCheckModal').style.display = 'none';
+    document.getElementById('quickCheckResult').innerHTML = '';
+}
+
+// Load dropdown data
+async function loadDropdownData() {
+    try {
+        // This would normally fetch from API
+        // For now, using mock data
+        const vessels = ['8oz Tumbler', '10oz Jar', '12oz Tin', '6oz Votive'];
+        const waxes = ['Soy C3', 'Coconut-Soy Blend', 'Coco-Apricot', 'Paraffin Blend'];
+        const fragrances = ['Vanilla Bean', 'Lavender Fields', 'Ocean Breeze', 'Citrus Burst'];
+        
+        populateDropdown('predictVessel', vessels);
+        populateDropdown('predictWax', waxes);
+        populateDropdown('predictOldWax', waxes);
+        populateDropdown('predictFragrance', fragrances);
+        
+    } catch (error) {
+        console.error('Error loading dropdown data:', error);
+    }
+}
+
+function populateDropdown(elementId, options) {
+    const select = document.getElementById(elementId);
+    const currentValue = select.value;
+    
+    // Keep first option (placeholder)
+    const firstOption = select.options[0];
+    select.innerHTML = '';
+    select.add(firstOption);
+    
+    options.forEach(option => {
+        const opt = document.createElement('option');
+        opt.value = option;
+        opt.textContent = option;
+        select.add(opt);
+    });
+    
+    select.value = currentValue;
+}
+
+// Handle prediction form submission
+document.getElementById('predictForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        vessel_id: document.getElementById('predictVessel').value,
+        wax_type_id: document.getElementById('predictWax').value,
+        fragrance_id: document.getElementById('predictFragrance').value,
+        fragrance_load: parseFloat(document.getElementById('predictLoad').value),
+        old_wax_id: document.getElementById('predictOldWax').value || undefined
+    };
+    
+    try {
+        const response = await fetch('/api/wick/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayPredictionResults(data.recommendations);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error making prediction:', error);
+        alert('Failed to get predictions');
+    }
+});
+
+// Display prediction results
+function displayPredictionResults(recommendations) {
+    const resultsDiv = document.getElementById('predictionResults');
+    
+    resultsDiv.innerHTML = '<h3>Recommended Wicks:</h3>' + 
+        recommendations.map(rec => `
+            <div class="recommendation-item ${rec.confidence > 0.7 ? 'high' : rec.confidence > 0.4 ? 'medium' : 'low'}-confidence">
+                <span class="wick-name">${rec.wick_name}</span>
+                <span class="confidence-badge ${rec.confidence > 0.7 ? 'high' : rec.confidence > 0.4 ? 'medium' : 'low'}">
+                    ${(rec.confidence * 100).toFixed(0)}%
+                </span>
+                <div class="reasoning">${rec.reasoning}</div>
+            </div>
+        `).join('');
+}
+
+// Handle quick check form
+document.getElementById('quickCheckForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        vessel: document.getElementById('checkVessel').value,
+        wax: document.getElementById('checkWax').value,
+        fragrance: document.getElementById('checkFragrance').value,
+        wick: document.getElementById('checkWick').value
+    };
+    
+    try {
+        const response = await fetch('/api/wick/quick-check', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayQuickCheckResult(data);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error checking wick:', error);
+        alert('Failed to check wick compatibility');
+    }
+});
+
+// Display quick check result
+function displayQuickCheckResult(data) {
+    const resultDiv = document.getElementById('quickCheckResult');
+    
+    resultDiv.className = 'quick-check-result ' + data.status;
+    resultDiv.innerHTML = `
+        <h3>${data.status === 'recommended' ? '✅ Good Choice!' : 
+             data.status === 'possible' ? '⚠️ Possible' : 
+             '❌ Not Recommended'}</h3>
+        <p>${data.message}</p>
+        ${data.top_recommendations.length > 0 ? 
+            '<h4>Top Recommendations:</h4>' + 
+            data.top_recommendations.map(r => 
+                `<div>${r.wick} (${(r.confidence * 100).toFixed(0)}%)</div>`
+            ).join('') : ''
+        }
+    `;
+}
+
+// Trigger model retrain
+async function triggerRetrain() {
+    if (!confirm('Are you sure you want to retrain the model? This may take a few minutes.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/wick/retrain', {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`Model retrained successfully!\nAccuracy: ${(data.accuracy * 100).toFixed(1)}%\nVersion: ${data.model_version}`);
+            loadDashboardData();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error retraining model:', error);
+        alert('Failed to retrain model');
+    }
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    if (event.target.className === 'modal') {
+        event.target.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}
