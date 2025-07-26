@@ -235,8 +235,8 @@ class NetSuiteClient:
             # Use SuiteQL to search for different product types with "starts with" patterns
             queries = {
                 'vessels': [
-                    # Items starting with VES only - exclude inactive items
-                    "SELECT id, itemid, displayname FROM item WHERE LOWER(itemid) LIKE 'ves%' AND isinactive = 'F' ORDER BY itemid",
+                    # Items starting with VES only - exclude inactive items, include ounce_fill custom field
+                    "SELECT id, itemid, displayname, custitem16 as ounce_fill FROM item WHERE LOWER(itemid) LIKE 'ves%' AND isinactive = 'F' ORDER BY itemid",
                 ],
                 'waxes': [
                     # Items starting with WAX - exclude inactive items
@@ -277,10 +277,16 @@ class NetSuiteClient:
                             
                             # Avoid duplicates
                             if not any(p['id'] == item_id for p in products[category]):
-                                products[category].append({
+                                item_data = {
                                     'id': item_id,
                                     'name': item_name
-                                })
+                                }
+                                
+                                # Add ounce_fill for vessels if available
+                                if category == 'vessels' and row.get('ounce_fill'):
+                                    item_data['ounce_fill'] = row.get('ounce_fill')
+                                
+                                products[category].append(item_data)
             
             # If no items found, use fallback
             if not any(products.values()):

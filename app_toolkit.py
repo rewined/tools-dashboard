@@ -938,35 +938,57 @@ def get_wick_recommendations(vessel):
                 # Fall through to heuristic method
         
         # Original heuristic-based implementation
-        # Parse vessel name to extract size info
-        vessel_lower = vessel.lower()
+        # Look up vessel ounce_fill from NetSuite data
+        oz_fill = None
         
-        # Try to extract oz from vessel name (multiple patterns)
-        import re
+        # Try to get ounce_fill from cached vessel data
+        try:
+            # Get cached products
+            cached_products = netsuite_client.get_candle_products() if netsuite_client.is_configured else {}
+            vessels = cached_products.get('vessels', [])
+            
+            # Find matching vessel by name
+            for v in vessels:
+                if v['name'] == vessel:
+                    oz_fill = v.get('ounce_fill')
+                    if oz_fill:
+                        oz_fill = float(oz_fill)
+                        print(f"Found ounce_fill for {vessel}: {oz_fill}oz")
+                        break
+        except Exception as e:
+            print(f"Error looking up ounce_fill: {e}")
         
-        # Try different patterns for size extraction
-        oz_match = re.search(r'(\d+(?:\.\d+)?)\s*oz', vessel_lower)
-        if not oz_match:
-            # Try pattern like "8oz" or "8 oz"
+        # If no ounce_fill found, try parsing vessel name as fallback
+        if not oz_fill:
+            vessel_lower = vessel.lower()
+            
+            # Try to extract oz from vessel name (multiple patterns)
+            import re
+            
+            # Try different patterns for size extraction
             oz_match = re.search(r'(\d+(?:\.\d+)?)\s*oz', vessel_lower)
-        if not oz_match:
-            # Try pattern with numbers followed by ounce indicators
-            oz_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:ounce|ounces)', vessel_lower)
-        if not oz_match:
-            # Try pattern with just numbers (assume common sizes)
-            number_match = re.search(r'(\d+(?:\.\d+)?)', vessel_lower)
-            if number_match:
-                num = float(number_match.group(1))
-                # Common candle sizes
-                if 4 <= num <= 20:
-                    oz_match = number_match
-        
-        if not oz_match:
-            # Default to medium size if we can't determine
-            print(f"Could not parse vessel size from: {vessel}, defaulting to 8oz")
-            oz_fill = 8.0
-        else:
-            oz_fill = float(oz_match.group(1))
+            if not oz_match:
+                # Try pattern like "8oz" or "8 oz"
+                oz_match = re.search(r'(\d+(?:\.\d+)?)\s*oz', vessel_lower)
+            if not oz_match:
+                # Try pattern with numbers followed by ounce indicators
+                oz_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:ounce|ounces)', vessel_lower)
+            if not oz_match:
+                # Try pattern with just numbers (assume common sizes)
+                number_match = re.search(r'(\d+(?:\.\d+)?)', vessel_lower)
+                if number_match:
+                    num = float(number_match.group(1))
+                    # Common candle sizes
+                    if 4 <= num <= 20:
+                        oz_match = number_match
+            
+            if not oz_match:
+                # Default to medium size if we can't determine
+                print(f"Could not parse vessel size from: {vessel}, defaulting to 8oz")
+                oz_fill = 8.0
+            else:
+                oz_fill = float(oz_match.group(1))
+                print(f"Parsed ounce size from vessel name: {oz_fill}oz")
         
         # Categorize vessel size and estimate diameter
         # Updated based on actual product data - many small candles (2.5oz)
