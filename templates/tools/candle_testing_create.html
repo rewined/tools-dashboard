@@ -732,10 +732,21 @@ function smartSelectWicks() {
                         console.log(`Comparing "${wickName}" with "${recWick}"`);
                         
                         // Check if wick name contains the recommendation
+                        // Handle NetSuite format: "wick-cd 12, at 3.75" - " should match "cd-12"
+                        const wickType = recWick.split('-')[0]; // "cd" from "cd-12"
+                        const wickSize = recWick.split('-')[1]; // "12" from "cd-12"
+                        
                         if (wickName.includes(recWick) || 
                             wickName.includes(recWick.replace('-', '')) ||
                             wickName.includes('wick.' + recWick) ||
-                            wickName.includes('wick-' + recWick)) {
+                            wickName.includes('wick-' + recWick) ||
+                            // NetSuite format matching
+                            (wickSize && wickName.includes(`wick-${wickType} ${wickSize}`)) ||
+                            (wickSize && wickName.includes(`wick-${wickType}${wickSize}`)) ||
+                            // Additional patterns for ECO wicks
+                            (wickType === 'eco' && wickSize && wickName.includes(`wick-eco ${wickSize}`)) ||
+                            (wickType === 'cd' && wickSize && wickName.includes(`wick-cd ${wickSize}`)) ||
+                            (wickType === 'lx' && wickSize && wickName.includes(`wick-lx ${wickSize}`))) {
                             
                             console.log(`Match found: ${wickName} matches ${recWick}`);
                             
