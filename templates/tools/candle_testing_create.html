@@ -719,16 +719,25 @@ function smartSelectWicks() {
                 // Try to match recommendations with available wicks
                 const wickMatches = [];
                 
+                console.log('Available wicks:', availableWicks.map(w => w.name));
+                console.log('Recommendations:', data.recommendations);
+                
                 for (const rec of data.recommendations) {
+                    console.log('Processing recommendation:', rec);
+                    
                     for (const wick of availableWicks) {
                         const wickName = wick.name.toLowerCase();
                         const recWick = rec.wick ? rec.wick.toLowerCase() : rec.toLowerCase();
+                        
+                        console.log(`Comparing "${wickName}" with "${recWick}"`);
                         
                         // Check if wick name contains the recommendation
                         if (wickName.includes(recWick) || 
                             wickName.includes(recWick.replace('-', '')) ||
                             wickName.includes('wick.' + recWick) ||
                             wickName.includes('wick-' + recWick)) {
+                            
+                            console.log(`Match found: ${wickName} matches ${recWick}`);
                             
                             if (!wickMatches.find(w => w.wick.id === wick.id)) {
                                 wickMatches.push({
@@ -742,6 +751,8 @@ function smartSelectWicks() {
                     }
                     if (wickMatches.length >= 8) break;
                 }
+                
+                console.log('Final wickMatches:', wickMatches);
                 
                 // Sort by probability and take top 6
                 wickMatches.sort((a, b) => b.probability - a.probability);
@@ -784,12 +795,17 @@ function smartSelectWicks() {
                 // Show analysis info
                 const info = `Smart Selection Complete!
                 
-Vessel Size: ${data.vessel_size.category} (${data.vessel_size.oz_fill}oz)
-Estimated Diameter: ${data.vessel_size.diameter_estimate}
-Wax Type: ${data.factors.wax_type}
-Fragrance Type: ${data.factors.fragrance_type}
+Vessel Size: ${data.vessel_size ? data.vessel_size.category : 'Unknown'} (${data.vessel_size ? data.vessel_size.oz_fill : 'Unknown'}oz)
+Estimated Diameter: ${data.vessel_size ? data.vessel_size.diameter_estimate : 'Unknown'}
+Wax Type: ${data.factors ? data.factors.wax_type : 'Unknown'}
+Fragrance Type: ${data.factors ? data.factors.fragrance_type : 'Unknown'}
 ${wickInfo}
-${matchedWicks.length} wicks selected based on probability scores.`;
+${matchedWicks.length} wicks selected based on probability scores.
+
+Debug Info:
+- Available wicks: ${availableWicks.length}
+- Recommendations: ${data.recommendations.length}
+- Matches found: ${wickMatches.length}`;
                 
                 alert(info);
                 
