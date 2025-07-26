@@ -691,7 +691,6 @@ function smartSelectWicks() {
             if (data.success && data.recommendations) {
                 // Find matching wicks from available options
                 const availableWicks = window.productData ? window.productData.wicks : [];
-                const matchedWicks = [];
                 
                 // Try to match recommendations with available wicks
                 const wickMatches = [];
