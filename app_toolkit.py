@@ -909,13 +909,14 @@ def get_wick_recommendations(vessel):
                 fragrance_result = supabase_client.table('fragrance_oils').select('id').ilike('name', f'%{fragrance}%').limit(1).execute() if fragrance else None
                 
                 if vessel_result.data and wax_result and wax_result.data and fragrance_result and fragrance_result.data:
-                    # Use the ML-powered predictor
+                    # Use the ML-powered predictor with NetSuite assembly data
                     predictor = WickPredictor(supabase_client)
                     recommendations = predictor.get_comprehensive_recommendations(
                         vessel_id=vessel_result.data[0]['id'],
                         wax_type_id=wax_result.data[0]['id'],
                         fragrance_id=fragrance_result.data[0]['id'],
-                        fragrance_load=8.5  # Default assumption
+                        fragrance_load=8.5,  # Default assumption
+                        netsuite_client=netsuite_client  # Pass NetSuite client for assembly analysis
                     )
                     
                     # Format for UI
@@ -935,7 +936,39 @@ def get_wick_recommendations(vessel):
                     })
             except Exception as e:
                 print(f"Error using ML predictor: {e}")
-                # Fall through to heuristic method
+                # Fall through to heuristic method but still try assembly analysis
+                
+        # Try assembly-based recommendations as fallback even without full Supabase integration
+        assembly_recommendations = []
+        if netsuite_client and netsuite_client.is_configured:
+            try:
+                # Get assembly items directly from NetSuite
+                assemblies = netsuite_client.get_assembly_items()
+                
+                if assemblies:
+                    # Simple assembly matching without Supabase lookup
+                    assembly_matches = _analyze_assemblies_for_vessel_fragrance(
+                        assemblies, vessel, fragrance, wax
+                    )
+                    
+                    if assembly_matches:
+                        return jsonify({
+                            'success': True,
+                            'recommendations': assembly_matches[:8],
+                            'source': 'assembly_analysis',
+                            'vessel_size': {
+                                'category': 'inferred_from_assembly',
+                                'oz_fill': 'varies',
+                                'diameter_estimate': 'varies'
+                            },
+                            'factors': {
+                                'wax_type': wax,
+                                'fragrance_type': fragrance
+                            }
+                        })
+            except Exception as e:
+                print(f"Error in assembly analysis fallback: {e}")
+                # Continue to heuristic method
         
         # Original heuristic-based implementation
         # Look up vessel ounce_fill from NetSuite data
@@ -1184,6 +1217,88 @@ def not_found(e):
 @app.errorhandler(500)
 def server_error(e):
     return jsonify({'error': 'Internal server error'}), 500
+
+def _analyze_assemblies_for_vessel_fragrance(assemblies, vessel_name, fragrance_name, wax_name):
+    """Analyze assemblies to find proven wick combinations (simplified version)"""
+    proven_combinations = []
+    
+    # Extract keywords for matching
+    vessel_keywords = _extract_keywords_simple(vessel_name)
+    fragrance_keywords = _extract_keywords_simple(fragrance_name)
+    
+    for assembly in assemblies:
+        assembly_name = assembly.get('displayname', '').lower()
+        assembly_itemid = assembly.get('itemid', '').lower()
+        
+        # Check if this assembly matches our criteria
+        vessel_match = any(keyword in assembly_name or keyword in assembly_itemid 
+                         for keyword in vessel_keywords)
+        fragrance_match = any(keyword in assembly_name or keyword in assembly_itemid 
+                            for keyword in fragrance_keywords)
+        
+        if vessel_match and fragrance_match:
+            # Extract wick information from assembly name
+            extracted_wicks = _extract_wicks_from_text(f"{assembly_name} {assembly_itemid}")
+            
+            for wick in extracted_wicks:
+                proven_combinations.append({
+                    'wick': wick,
+                    'probability': 95,  # High confidence for proven combinations
+                    'reason': f'Proven assembly combination: {assembly.get("itemid", "")}',
+                    'assembly_source': assembly.get('itemid', '')
+                })
+    
+    # Remove duplicates and return top matches
+    unique_combinations = []
+    seen_wicks = set()
+    
+    for combo in proven_combinations:
+        if combo['wick'] not in seen_wicks:
+            unique_combinations.append(combo)
+            seen_wicks.add(combo['wick'])
+    
+    return unique_combinations
+
+def _extract_keywords_simple(name):
+    """Extract keywords from product names for matching"""
+    if not name:
+        return []
+    
+    # Clean up the name
+    name = name.lower()
+    name = name.replace('ves-', '').replace('oil-', '').replace('fo-', '').replace('frag-', '')
+    
+    # Split and filter
+    keywords = []
+    for word in name.replace('-', ' ').replace('_', ' ').split():
+        if len(word) >= 3:
+            keywords.append(word.strip())
+    
+    return keywords
+
+def _extract_wicks_from_text(text):
+    """Extract wick identifiers from assembly text"""
+    import re
+    
+    text = text.lower()
+    wicks = []
+    
+    # Common wick patterns
+    patterns = [
+        r'cd[-\s]*(\d+)',   # CD-6, CD 6
+        r'eco[-\s]*(\d+)',  # ECO-4, ECO 4  
+        r'lx[-\s]*(\d+)',   # LX-10, LX 10
+        r'htp[-\s]*(\d+)',  # HTP-8, HTP 8
+    ]
+    
+    for pattern in patterns:
+        matches = re.findall(pattern, text)
+        for match in matches:
+            wick_type = pattern.split('(')[0].replace('[-\\s]*', '').upper()
+            wick_name = f"{wick_type}-{match}"
+            wicks.append(wick_name)
+    
+    return wicks
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

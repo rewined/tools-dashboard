@@ -137,6 +137,183 @@ class WickPredictor:
         except:
             return None
     
+    def get_assembly_based_recommendations(self, vessel_id: str, wax_type_id: str, 
+                                         fragrance_id: str, netsuite_client = None) -> List[WickRecommendation]:
+        """Get recommendations based on existing NetSuite assembly combinations"""
+        recommendations = []
+        
+        if not netsuite_client or not netsuite_client.is_configured:
+            return recommendations
+        
+        try:
+            # Get all assembly items that might match our criteria
+            assemblies = netsuite_client.get_assembly_items()
+            
+            if not assemblies:
+                return recommendations
+            
+            # Get vessel, wax, and fragrance names for matching
+            vessel_name = self._get_item_name_by_id(vessel_id, 'vessels')
+            wax_name = self._get_item_name_by_id(wax_type_id, 'wax_types')  
+            fragrance_name = self._get_item_name_by_id(fragrance_id, 'fragrance_oils')
+            
+            if not all([vessel_name, wax_name, fragrance_name]):
+                return recommendations
+            
+            # Look for assembly combinations and extract wick patterns
+            proven_wicks = self._analyze_assembly_combinations(
+                assemblies, vessel_name, wax_name, fragrance_name
+            )
+            
+            # Convert proven combinations to recommendations
+            for wick_data in proven_wicks:
+                # Create high-confidence recommendation for proven combinations
+                recommendation = WickRecommendation(
+                    wick_id=wick_data['wick_id'],
+                    wick_name=wick_data['wick_name'], 
+                    confidence=wick_data['confidence'],
+                    reasoning=wick_data['reasoning'],
+                    rank=len(recommendations) + 1
+                )
+                recommendations.append(recommendation)
+            
+            return recommendations
+            
+        except Exception as e:
+            print(f"Error in assembly-based recommendations: {e}")
+            return recommendations
+    
+    def _get_item_name_by_id(self, item_id: str, table_name: str) -> Optional[str]:
+        """Get item name from Supabase by ID"""
+        try:
+            result = self.supabase.table(table_name).select('name').eq('id', item_id).single().execute()
+            return result.data['name'] if result.data else None
+        except:
+            return None
+    
+    def _analyze_assembly_combinations(self, assemblies: List[Dict], vessel_name: str, 
+                                     wax_name: str, fragrance_name: str) -> List[Dict]:
+        """Analyze assembly items to find proven wick combinations"""
+        proven_wicks = []
+        
+        # Keywords for matching components in assembly names/descriptions
+        vessel_keywords = self._extract_keywords(vessel_name)
+        fragrance_keywords = self._extract_keywords(fragrance_name)
+        
+        for assembly in assemblies:
+            assembly_name = assembly.get('displayname', '').lower()
+            assembly_itemid = assembly.get('itemid', '').lower()
+            oz_fill = assembly.get('oz_fill')
+            
+            # Check if this assembly matches our vessel and fragrance
+            vessel_match = any(keyword in assembly_name or keyword in assembly_itemid 
+                             for keyword in vessel_keywords)
+            fragrance_match = any(keyword in assembly_name or keyword in assembly_itemid 
+                                for keyword in fragrance_keywords)
+            
+            if vessel_match and fragrance_match:
+                # This assembly uses our vessel + fragrance combination
+                # Extract wick information from the assembly name/ID
+                extracted_wicks = self._extract_wick_from_assembly(assembly)
+                
+                for wick_info in extracted_wicks:
+                    # Calculate confidence based on match quality
+                    confidence = self._calculate_assembly_confidence(
+                        vessel_match, fragrance_match, oz_fill, assembly
+                    )
+                    
+                    proven_wicks.append({
+                        'wick_id': wick_info['wick_id'],
+                        'wick_name': wick_info['wick_name'],
+                        'confidence': confidence,
+                        'reasoning': f"Proven combination from assembly {assembly.get('itemid', '')} - same vessel and fragrance"
+                    })
+        
+        # Remove duplicates and sort by confidence
+        unique_wicks = []
+        seen_wicks = set()
+        
+        for wick in sorted(proven_wicks, key=lambda x: x['confidence'], reverse=True):
+            if wick['wick_id'] not in seen_wicks:
+                unique_wicks.append(wick)
+                seen_wicks.add(wick['wick_id'])
+        
+        return unique_wicks[:6]  # Return top 6 proven combinations
+    
+    def _extract_keywords(self, name: str) -> List[str]:
+        """Extract searchable keywords from item names"""
+        if not name:
+            return []
+        
+        # Remove common prefixes and clean up
+        name = name.lower()
+        name = name.replace('ves-', '').replace('oil-', '').replace('fo-', '').replace('frag-', '')
+        
+        # Split by common separators and filter short words
+        keywords = []
+        for word in name.replace('-', ' ').replace('_', ' ').split():
+            if len(word) >= 3:  # Only words with 3+ characters
+                keywords.append(word.strip())
+        
+        return keywords
+    
+    def _extract_wick_from_assembly(self, assembly: Dict) -> List[Dict]:
+        """Extract wick information from assembly name/ID"""
+        # This would need to be enhanced based on your actual assembly naming conventions
+        # For now, return a placeholder that would be filled by actual NetSuite BOM analysis
+        
+        assembly_name = assembly.get('displayname', '').lower()
+        assembly_itemid = assembly.get('itemid', '').lower()
+        
+        # Look for common wick patterns in assembly names
+        import re
+        wick_patterns = [
+            r'cd[-\s]*(\d+)',  # CD-6, CD 6, etc.
+            r'eco[-\s]*(\d+)', # ECO-4, ECO 4, etc.
+            r'lx[-\s]*(\d+)',  # LX-10, LX 10, etc.
+            r'htp[-\s]*(\d+)', # HTP-8, HTP 8, etc.
+        ]
+        
+        extracted_wicks = []
+        text_to_search = f"{assembly_name} {assembly_itemid}"
+        
+        for pattern in wick_patterns:
+            matches = re.findall(pattern, text_to_search)
+            for match in matches:
+                wick_type = pattern.split('(')[0].replace('[-\\s]*', '').upper()
+                wick_name = f"{wick_type}-{match}"
+                
+                extracted_wicks.append({
+                    'wick_id': f"wick_{wick_name.lower().replace('-', '_')}",
+                    'wick_name': wick_name
+                })
+        
+        # If no specific wick found, this assembly may need BOM analysis
+        if not extracted_wicks:
+            # Placeholder for BOM-based wick extraction
+            pass
+        
+        return extracted_wicks
+    
+    def _calculate_assembly_confidence(self, vessel_match: bool, fragrance_match: bool, 
+                                     oz_fill: float, assembly: Dict) -> float:
+        """Calculate confidence score for assembly-based recommendations"""
+        base_confidence = 0.95  # Very high for proven combinations
+        
+        # Adjust based on match quality
+        if vessel_match and fragrance_match:
+            confidence = base_confidence
+        elif vessel_match or fragrance_match:
+            confidence = base_confidence * 0.8
+        else:
+            confidence = base_confidence * 0.6
+        
+        # Boost confidence if we have oz_fill data (more precise match)
+        if oz_fill:
+            confidence = min(0.98, confidence + 0.05)
+        
+        return confidence
+    
     def calculate_heat_index_adjustment(self, fragrance_id: str) -> int:
         """Calculate wick size adjustment based on fragrance heat index"""
         try:
@@ -251,16 +428,23 @@ class WickPredictor:
     def get_comprehensive_recommendations(self, vessel_id: str, wax_type_id: str,
                                         fragrance_id: str, fragrance_load: float,
                                         old_wax_id: Optional[str] = None,
-                                        current_wick_id: Optional[str] = None) -> List[WickRecommendation]:
+                                        current_wick_id: Optional[str] = None,
+                                        netsuite_client = None) -> List[WickRecommendation]:
         """Get comprehensive recommendations combining all methods"""
         recommendations = []
         
-        # 1. Try majority vote baseline
+        # 1. Try assembly-based recommendations (highest priority)
+        assembly_recs = self.get_assembly_based_recommendations(
+            vessel_id, wax_type_id, fragrance_id, netsuite_client
+        )
+        recommendations.extend(assembly_recs)
+        
+        # 2. Try majority vote baseline
         majority_rec = self.get_majority_vote_recommendation(vessel_id, wax_type_id)
         if majority_rec:
             recommendations.append(majority_rec)
         
-        # 2. Try wax conversion if applicable
+        # 3. Try wax conversion if applicable
         if old_wax_id and current_wick_id:
             conversion_rec = self.get_wax_conversion_recommendation(
                 vessel_id, old_wax_id, wax_type_id, current_wick_id
@@ -268,7 +452,7 @@ class WickPredictor:
             if conversion_rec:
                 recommendations.append(conversion_rec)
         
-        # 3. Get ML predictions
+        # 4. Get ML predictions
         ml_recs = self.get_ml_predictions(vessel_id, wax_type_id, fragrance_id, fragrance_load)
         recommendations.extend(ml_recs)
         
